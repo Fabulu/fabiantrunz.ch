@@ -7,8 +7,8 @@ export const translations: Record<string, { de: string; en: string }> = {
 
   // ReadZen
   "project.readzen.tagline": {
-    de: "Chinesische Zen-Texte lesen, übersetzen und erforschen — Desktop & Web",
-    en: "Read, translate, and research Chinese Zen texts — desktop & web",
+    de: "Chinesische Zen-Texte lesen, übersetzen und erforschen. Desktop & Web",
+    en: "Read, translate, and research Chinese Zen texts. Desktop & web",
   },
   "project.readzen.description": {
     de: "Zweisprachiger Reader mit Hover-Wörterbuch für über 5'000 CBETA-Texte. Enthält 301 Zen-Meister mit interaktivem Abstammungsgraph, kuratierte Sammlungen und eine Übersetzungs-Werkbank. Verfügbar als Desktop-App und Web-Companion.",
@@ -31,8 +31,8 @@ export const translations: Record<string, { de: string; en: string }> = {
     en: "Unofficial companion for the Space Empires 4X board game",
   },
   "project.se4x.description": {
-    de: "Produktionsblatt, Hex-Karte, Schiff- und Technologie-Tracker, Kampfrechner und Regelreferenz — mit Unterstützung für 4 Erweiterungen. Alle Daten bleiben lokal auf dem Gerät.",
-    en: "Production sheet, hex map, ship & tech tracker, combat calculator, and rules reference — supporting 4 expansions. All data stays local on your device.",
+    de: "Produktionsblatt, Hex-Karte, Schiff- und Technologie-Tracker, Kampfrechner und Regelreferenz. Unterstützt 4 Erweiterungen. Alle Daten bleiben lokal auf dem Gerät.",
+    en: "Production sheet, hex map, ship & tech tracker, combat calculator, and rules reference. Supports 4 expansions. All data stays local on your device.",
   },
 
   // WhoGoesFirst
@@ -41,8 +41,8 @@ export const translations: Record<string, { de: string; en: string }> = {
     en: "Multi-touch first-player picker for board games",
   },
   "project.whogoesfirst.description": {
-    de: "2 bis 10+ Spieler legen gleichzeitig auf einem Bildschirm los — dramatischer Countdown und zufällige Auswahl. Mit Katzen-Modus, 12 Sprachen und Partikeleffekten.",
-    en: "2 to 10+ players on one screen — dramatic countdown and random selection. Features Cat Mode, 12 languages, and particle effects.",
+    de: "2 bis 10+ Spieler auf einem Bildschirm, dramatischer Countdown, zufällige Auswahl. Mit Katzen-Modus, 12 Sprachen und Partikeleffekten.",
+    en: "2 to 10+ players on one screen, dramatic countdown, random selection. Features Cat Mode, 12 languages, and particle effects.",
   },
 
   // Vortex
@@ -61,8 +61,8 @@ export const translations: Record<string, { de: string; en: string }> = {
     en: "Critical editions of ancient Chinese Zen texts",
   },
   "project.openzen.description": {
-    de: "Drei fertige kritische Editionen altchinesischer Zen-Texte: Xinxinming, Wumenguan (Leseausgabe) und Zhengdaoge. Jede Edition wird aus über 100 historischen Holzschnittquellen erstellt — mit vollständiger Herkunftsnachverfolgung jedes OCR- und Editionsschrittes. Das Projekt wächst stetig.",
-    en: "Three completed critical editions of ancient Chinese Zen texts: Hsin Hsin Ming, Wumenguan (reading edition), and Song of Enlightenment. Each edition is built from 100+ historical woodblock sources — with full provenance tracking of every OCR and editorial step. The project is actively growing.",
+    de: "Drei fertige kritische Editionen altchinesischer Zen-Texte: Xinxinming, Wumenguan (Leseausgabe) und Zhengdaoge. Jede Edition wird aus über 100 historischen Holzschnittquellen erstellt, mit vollständiger Herkunftsnachverfolgung jedes OCR- und Editionsschrittes. Das Projekt wächst stetig.",
+    en: "Three completed critical editions of ancient Chinese Zen texts: Hsin Hsin Ming, Wumenguan (reading edition), and Song of Enlightenment. Each edition is built from 100+ historical woodblock sources, with full provenance tracking of every OCR and editorial step. The project is actively growing.",
   },
 
   // Project links
@@ -81,6 +81,24 @@ export const translations: Record<string, { de: string; en: string }> = {
   "project.links.donate": {
     de: "Unterstützen",
     en: "Support",
+  },
+
+  // About
+  "about.tagline": {
+    de: "Software-Entwickler, Bern",
+    en: "Software Developer, Bern",
+  },
+  "about.education": {
+    de: "BSc Informatik und BA Germanistik, BFH (2021-2026)",
+    en: "BSc Computer Science and BA German Languages, BFH (2021-2026)",
+  },
+  "about.work": {
+    de: "Aktuell bei delemed AG (Medizinsoftware). Zuvor bei weroSoft AG und VEMAG Computer AG. Arbeitet mit Claude Code und Codex.",
+    en: "Currently at delemed AG (medical software). Previously at weroSoft AG and VEMAG Computer AG. Works with Claude Code and Codex.",
+  },
+  "about.linkedin": {
+    de: "LinkedIn-Profil",
+    en: "LinkedIn Profile",
   },
 
   // Overlay
@@ -119,7 +137,7 @@ export const translations: Record<string, { de: string; en: string }> = {
 
   // Meta
   "meta.description": {
-    de: "Software-Entwickler — Tools für Leser, Spieler und Forscher",
+    de: "Software-Entwickler. Tools für Leser, Spieler und Forscher",
     en: "Software developer building tools for readers, gamers, and scholars",
   },
 };

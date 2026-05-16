@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Project } from '../data/projects';
-import { createPanelTexture, createPanelTextureWithIcon, preloadIcons } from './canvas-texture';
+import { createPanelTexture, createPanelTextureWithIcon, createAboutTexture, preloadIcons } from './canvas-texture';
 import { projects } from '../data/projects';
 
 export interface PanelData {
@@ -100,6 +100,59 @@ export async function createPanels(
       material,
     });
   }
+
+  // About panel — floating below the project arc
+  const aboutTexture = await createAboutTexture(theme);
+  const aboutMaterial = new THREE.MeshPhysicalMaterial({
+    map: aboutTexture,
+    color: 0xffffff,
+    metalness: 0.05,
+    roughness: 0.75,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.50,
+    envMapIntensity: 0,
+    envMap: null,
+    reflectivity: 0,
+    transmission: 0,
+    emissive: 0x000000,
+    emissiveIntensity: 0,
+  });
+  aboutMaterial.toneMapped = false;
+  aboutMaterial.side = THREE.FrontSide;
+
+  const aboutFront = new THREE.Mesh(frontGeo, aboutMaterial);
+  const aboutBack = new THREE.Mesh(backGeo, new THREE.MeshBasicMaterial({
+    color: theme === 'light' ? 0xe8e8f0 : 0x1a1a2e,
+  }));
+  aboutBack.position.z = -0.01;
+
+  const aboutGroup = new THREE.Group();
+  aboutGroup.add(aboutFront);
+  aboutGroup.add(aboutBack);
+  aboutGroup.position.set(0, -1.1, 0.1);
+  aboutGroup.scale.set(0.85, 0.85, 0.85);
+  scene.add(aboutGroup);
+
+  const aboutProject: Project = {
+    id: 'about',
+    featured: false,
+    titleKey: 'Fabian Trunz',
+    taglineKey: 'about.tagline',
+    descriptionKey: 'about.work',
+    tags: [],
+    icon: '/fabian.png',
+    links: [],
+  };
+
+  panels.push({
+    mesh: aboutGroup,
+    frontMesh: aboutFront,
+    project: aboutProject,
+    basePosition: new THREE.Vector3(0, -1.1, 0.1),
+    baseRotation: new THREE.Euler(0, 0, 0),
+    texture: aboutTexture,
+    material: aboutMaterial,
+  });
 
   return panels;
 }

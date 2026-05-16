@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Project } from '../data/projects';
+import { t } from '../i18n';
 
 const CANVAS_W = 512;
 const CANVAS_H = 512;
@@ -183,4 +184,67 @@ export async function preloadIcons(
 
   await Promise.all(promises);
   return icons;
+}
+
+/**
+ * Create a texture for the About panel with photo + name.
+ */
+export async function createAboutTexture(
+  theme: 'light' | 'dark',
+): Promise<THREE.CanvasTexture> {
+  const [canvas, ctx] = createCanvas();
+  fillBackground(ctx, theme);
+
+  // Load photo
+  const photo = await new Promise<HTMLImageElement>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(img);
+    img.src = '/fabian.png';
+  });
+
+  // Draw circular photo with cover-fit (preserve aspect ratio, crop to circle)
+  const cx = CANVAS_W / 2;
+  const cy = 130;
+  const r = 70;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.clip();
+
+  // Cover-fit: scale to fill the circle, show head + shoulders
+  const diam = r * 2;
+  // Source crop: use a region that shows head + some shoulders
+  // The photo is portrait, so width < height. We want a square crop
+  // centered horizontally, starting near the top but with a little offset
+  // to show some shoulders
+  const cropSize = photo.naturalWidth * 0.95; // slightly less than full width
+  const sx = (photo.naturalWidth - cropSize) / 2;
+  const sy = photo.naturalHeight * 0.08; // offset down to center face in circle
+  ctx.drawImage(photo, sx, sy, cropSize, cropSize, cx - r, cy - r, diam, diam);
+  ctx.restore();
+
+  // Draw subtle circle border around photo
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = theme === 'dark' ? 'rgba(245,158,11,0.4)' : 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Name — same size as project titles
+  ctx.fillStyle = fgColor(theme);
+  ctx.font = `bold 52px ${FONT_FAMILY}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Fabian Trunz', cx, 280);
+
+  // Subtitle — same size as project subtitles
+  ctx.fillStyle = mutedColor(theme);
+  ctx.font = `28px ${FONT_FAMILY}`;
+  ctx.fillText(t('about.tagline'), cx, 320);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
 }

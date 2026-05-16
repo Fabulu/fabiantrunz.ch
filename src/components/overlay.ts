@@ -9,6 +9,8 @@ let tagsContainer: HTMLElement;
 let linksContainer: HTMLElement;
 let tagsLabel: HTMLElement;
 let linksLabel: HTMLElement;
+let tagsSection: HTMLElement;
+let linksSection: HTMLElement;
 let active = false;
 
 const closeCallbacks: (() => void)[] = [];
@@ -68,7 +70,7 @@ export function createOverlay(): HTMLElement {
   descriptionEl = document.createElement('p');
   descriptionEl.className = 'overlay__description';
 
-  const tagsSection = document.createElement('div');
+  tagsSection = document.createElement('div');
   tagsSection.className = 'overlay__tags-section';
 
   tagsLabel = document.createElement('h3');
@@ -81,7 +83,7 @@ export function createOverlay(): HTMLElement {
   tagsSection.appendChild(tagsLabel);
   tagsSection.appendChild(tagsContainer);
 
-  const linksSection = document.createElement('div');
+  linksSection = document.createElement('div');
   linksSection.className = 'overlay__links-section';
 
   linksLabel = document.createElement('h3');
@@ -108,8 +110,16 @@ export function createOverlay(): HTMLElement {
 }
 
 export function showOverlay(projectId: string): void {
+  if (!overlay) return;
+
+  // Special "about" overlay
+  if (projectId === 'about') {
+    showAboutOverlay();
+    return;
+  }
+
   const project = projects.find(p => p.id === projectId);
-  if (!project || !overlay) return;
+  if (!project) return;
 
   titleEl.textContent = project.titleKey;
 
@@ -122,6 +132,9 @@ export function showOverlay(projectId: string): void {
   tagsLabel.textContent = t('overlay.tags');
   linksLabel.textContent = t('overlay.links');
 
+  tagsSection.style.display = '';
+  linksSection.style.display = '';
+  descriptionEl.style.whiteSpace = '';
   tagsContainer.innerHTML = '';
   for (const tag of project.tags) {
     const span = document.createElement('span');
@@ -150,6 +163,44 @@ export function showOverlay(projectId: string): void {
   }
 
   overlay.classList.add('overlay--active');
+  active = true;
+  document.addEventListener('keydown', handleEscape);
+}
+
+function showAboutOverlay(): void {
+  titleEl.textContent = 'Fabian Trunz';
+
+  taglineEl.dataset.i18n = 'about.tagline';
+  taglineEl.textContent = t('about.tagline');
+
+  const edu = t('about.education');
+  const work = t('about.work');
+  descriptionEl.removeAttribute('data-i18n');
+  descriptionEl.textContent = `${edu}\n${work}`;
+  descriptionEl.style.whiteSpace = 'pre-line';
+
+  // No tags
+  tagsContainer.innerHTML = '';
+  tagsSection.style.display = 'none';
+
+  // LinkedIn link
+  linksContainer.innerHTML = '';
+  linksSection.style.display = '';
+  linksLabel.textContent = t('overlay.links');
+
+  const linkedIn = document.createElement('a');
+  linkedIn.className = 'overlay__link';
+  linkedIn.href = 'https://www.linkedin.com/in/fabian-trunz-456626245/';
+  linkedIn.target = '_blank';
+  linkedIn.rel = 'noopener noreferrer';
+  linkedIn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>';
+  const linkedInLabel = document.createElement('span');
+  linkedInLabel.dataset.i18n = 'about.linkedin';
+  linkedInLabel.textContent = t('about.linkedin');
+  linkedIn.appendChild(linkedInLabel);
+  linksContainer.appendChild(linkedIn);
+
+  overlay!.classList.add('overlay--active');
   active = true;
   document.addEventListener('keydown', handleEscape);
 }

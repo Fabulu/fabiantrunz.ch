@@ -12,6 +12,7 @@ let linksLabel: HTMLElement;
 let tagsSection: HTMLElement;
 let linksSection: HTMLElement;
 let active = false;
+let lastShowTime = 0;
 
 const closeCallbacks: (() => void)[] = [];
 
@@ -47,7 +48,10 @@ export function createOverlay(): HTMLElement {
 
   const backdrop = document.createElement('div');
   backdrop.className = 'overlay__backdrop';
-  backdrop.addEventListener('click', hideOverlay);
+  backdrop.addEventListener('click', () => {
+    // Prevent immediate close from the same touch that opened the overlay
+    if (active && Date.now() - lastShowTime > 300) hideOverlay();
+  });
 
   const card = document.createElement('div');
   card.className = 'overlay__card';
@@ -164,6 +168,7 @@ export function showOverlay(projectId: string): void {
 
   overlay.classList.add('overlay--active');
   active = true;
+  lastShowTime = Date.now();
   document.addEventListener('keydown', handleEscape);
 }
 
@@ -202,6 +207,7 @@ function showAboutOverlay(): void {
 
   overlay!.classList.add('overlay--active');
   active = true;
+  lastShowTime = Date.now();
   document.addEventListener('keydown', handleEscape);
 }
 

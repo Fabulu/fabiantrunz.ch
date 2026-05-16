@@ -42,7 +42,9 @@
       "Read(//c/Programmieren/**)",
       "Bash(wc -l /c/Programmieren/qda/Services/*.cs /c/Programmieren/qda/Models/*.cs /c/Programmieren/qda/ViewModels/*.cs /c/Programmieren/qda/Views/*.cs)",
       "Bash(ls:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "WebSearch",
+      "Bash(GIT_TERMINAL_PROMPT=0 git push origin main)"
     ]
   }
 }

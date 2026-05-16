@@ -1,8 +1,102 @@
 import * as THREE from 'three';
+import gsap from 'gsap';
 import { createLighting, transitionLighting } from './lighting';
 import { createPanels, transitionPanelMaterials, updatePanelTextures } from './panels';
+import type { PanelData } from './panels';
 import { setupInteraction } from './interaction';
 import { getCurrentTheme } from '../theme';
+
+// Responsive layout positions
+const DESKTOP_POSITIONS: [number, number, number][] = [
+  [-3.0, 0.2, 0.2], [-1.8, 0.25, 0.072], [-0.6, 0.22, 0.008],
+  [0.6, 0.27, 0.008], [1.8, 0.21, 0.072], [3.0, 0.24, 0.2],
+  [0, -0.85, 0.1],
+];
+
+const PORTRAIT_POSITIONS: [number, number, number][] = [
+  [-0.8, 1.8, 0], [0.8, 1.8, 0],
+  [-0.8, 0.55, 0], [0.8, 0.55, 0],
+  [-0.8, -0.7, 0], [0.8, -0.7, 0],
+  [0, -1.8, 0],
+];
+
+// Landscape mobile positions: two rows
+const LANDSCAPE_POSITIONS: [number, number, number][] = [
+  [-1.8, 0.55, 0], [-0.6, 0.55, 0], [0.6, 0.55, 0], [1.8, 0.55, 0],
+  [-1.2, -0.55, 0], [0, -0.55, 0], [1.2, -0.55, 0],
+];
+
+function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {
+  const aspect = w / h;
+  if (w < 900 && aspect < 0.9) return 'portrait';
+  if (h < 500) return 'landscape-mobile';
+  return 'desktop';
+}
+
+function applyLayout(
+  panels: PanelData[],
+  camera: THREE.PerspectiveCamera,
+  cameraBase: THREE.Vector3,
+  w: number,
+  h: number,
+  animate: boolean,
+) {
+  const mode = getLayoutMode(w, h);
+  const dur = animate ? 0.6 : 0;
+
+  let positions: [number, number, number][];
+  let fov: number;
+  let camPos: [number, number, number];
+  let panelScale: number;
+  let aboutScale: number;
+
+  if (mode === 'portrait') {
+    positions = PORTRAIT_POSITIONS;
+    fov = 70;
+    camPos = [0, 0, 5.0];
+    panelScale = 0.65;
+    aboutScale = 0.6;
+  } else if (mode === 'landscape-mobile') {
+    positions = LANDSCAPE_POSITIONS;
+    fov = 50;
+    camPos = [0, 0, 3.5];
+    panelScale = 0.7;
+    aboutScale = 0.65;
+  } else {
+    positions = DESKTOP_POSITIONS;
+    fov = 50;
+    camPos = [0, 0.3, 4.5];
+    panelScale = 1.0;
+    aboutScale = 0.85;
+  }
+
+  camera.fov = fov;
+  cameraBase.set(camPos[0], camPos[1], camPos[2]);
+  camera.position.copy(cameraBase);
+  camera.lookAt(0, camPos[1], 0); // look straight ahead from camera height
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+
+  panels.forEach((panel, i) => {
+    const pos = positions[i] ?? positions[positions.length - 1];
+    const scale = i === panels.length - 1 ? aboutScale : panelScale;
+    const rotY = mode === 'desktop' && i < 6 ? Math.atan2(pos[0], 6.0) * 0.4 : 0;
+
+    panel.basePosition.set(pos[0], pos[1], pos[2]);
+    panel.baseRotation.set(0, rotY, 0);
+    panel.baseScale = scale;
+
+    if (dur > 0) {
+      gsap.to(panel.mesh.position, { x: pos[0], y: pos[1], z: pos[2], duration: dur });
+      gsap.to(panel.mesh.rotation, { y: rotY, duration: dur });
+      gsap.to(panel.mesh.scale, { x: scale, y: scale, z: scale, duration: dur });
+    } else {
+      panel.mesh.position.set(pos[0], pos[1], pos[2]);
+      panel.mesh.rotation.set(0, rotY, 0);
+      panel.mesh.scale.setScalar(scale);
+    }
+  });
+}
 
 export interface SceneAPI {
   onThemeChange(theme: 'light' | 'dark'): void;
@@ -50,6 +144,9 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
     transitionPanelMaterials(panels, 'light', 0);
   }
 
+  // 6b. Apply initial responsive layout
+  applyLayout(panels, camera, cameraBasePosition, width, height, false);
+
   // 7. Interaction
   const interaction = setupInteraction(camera, panels, renderer.domElement, cameraBasePosition);
 
@@ -87,15 +184,19 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   }
   animate();
 
-  // 10. Resize handler
+  // 10. Responsive resize handler
+  let resizeRaf: number | null = null;
   function onResize() {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      renderer.setSize(w, h);
+      applyLayout(panels, camera, cameraBasePosition, w, h, true);
+    });
   }
   window.addEventListener('resize', onResize);
+  screen.orientation?.addEventListener('change', onResize);
 
   // 11. Body class
   document.body.classList.add('scene-active');

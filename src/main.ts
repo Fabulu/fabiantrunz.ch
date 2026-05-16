@@ -3,7 +3,7 @@ import { initTheme } from './theme';
 import { initLang, translatePage } from './i18n';
 import { createHeader } from './components/header';
 import { createOverlay } from './components/overlay';
-import { createUiBar } from './components/ui-bar';
+// import { createUiBar } from './components/ui-bar';
 import { initScene, type SceneAPI } from './scene/scene-manager';
 import { createFallbackView } from './fallback/css-panels';
 
@@ -31,11 +31,11 @@ async function main(): Promise<void> {
   wrapper.className = 'scene-wrapper';
   app.appendChild(wrapper);
 
-  // Overlay (sibling of canvas inside wrapper)
-  wrapper.appendChild(createOverlay());
+  // Overlay (appended to body, above everything, pointer-events:none when inactive)
+  document.body.appendChild(createOverlay());
 
-  // UI hint bar
-  document.body.appendChild(createUiBar());
+  // UI hint bar — disabled, was interfering with bottom taps
+  // document.body.appendChild(createUiBar());
 
   let sceneApi: SceneAPI | null = null;
 

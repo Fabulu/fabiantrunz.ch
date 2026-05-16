@@ -73,35 +73,93 @@ export function setupInteraction(
   /* ------------------------------------------------------------------ */
   /*  Pointer-move: track NDC mouse position                            */
   /* ------------------------------------------------------------------ */
+  const isTouch = 'ontouchstart' in window;
+
   function onPointerMove(e: PointerEvent): void {
-    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    // Skip hover tracking on touch — prevents fight with tap focus
+    if (isTouch) return;
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
   }
 
   /* ------------------------------------------------------------------ */
-  /*  Pointer-down: click / tap                                         */
+  /*  Tap / click — pointerdown is fastest and most reliable on mobile  */
   /* ------------------------------------------------------------------ */
-  function onPointerDown(_e: PointerEvent): void {
-    if (hoveredPanel && !focusedPanel) {
-      focusPanel(hoveredPanel);
+  let tapHandled = false;
+
+  function handleTap(clientX: number, clientY: number): boolean {
+    if (tapHandled) return false;
+    if (focusedPanel) return false;
+
+    // Use canvas bounding rect, not window dimensions — on mobile the
+    // address bar makes window.innerHeight differ from actual canvas size
+    const rect = canvas.getBoundingClientRect();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    // World matrices may be stale (bob animation changed position since last render).
+    // Force update so the raycast tests against actual current positions.
+    for (const p of panels) {
+      p.mesh.updateWorldMatrix(true, true);
     }
+
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(panels.map(p => p.frontMesh), false);
+    if (hits.length > 0) {
+      const tapped = panels.find(p => p.frontMesh === hits[0].object);
+      if (tapped) {
+        tapHandled = true;
+        setTimeout(() => { tapHandled = false; }, 400);
+        focusPanel(tapped);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function onPointerDown(e: PointerEvent): void {
+    if (handleTap(e.clientX, e.clientY)) e.preventDefault();
+  }
+
+  function onTouchStart(e: TouchEvent): void {
+    const t = e.touches[0];
+    if (t && handleTap(t.clientX, t.clientY)) e.preventDefault();
   }
 
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
 
   /* ------------------------------------------------------------------ */
   /*  Focus a panel                                                     */
   /* ------------------------------------------------------------------ */
   function focusPanel(panel: PanelData): void {
     focusedPanel = panel;
+    gsap.killTweensOf(panel.mesh.position);
+    gsap.killTweensOf(panel.mesh.rotation);
+    gsap.killTweensOf(panel.mesh.scale);
     hideUiBar();
 
-    // Move focused panel to fixed left position and tilt to face camera
+    // Move focused panel based on layout mode
+    const isPortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const isLandscapeMobile = window.innerHeight < 500;
+
+    let focusX = -1.2, focusY = 0, focusZ = 2.0;
+    if (isPortrait) {
+      focusX = 0;
+      focusY = 1.2; // upper area but not off-screen
+      focusZ = 1.8;
+    } else if (isLandscapeMobile) {
+      focusX = -1.2; // left side, leaving room for description on right
+      focusY = 0;
+      focusZ = 1.5;
+    }
+
     gsap.to(panel.mesh.position, {
-      x: -1.2,
-      y: 0,
-      z: 2.0,
+      x: focusX,
+      y: focusY,
+      z: focusZ,
       duration: 0.6,
       ease: 'power2.out',
     });
@@ -115,11 +173,13 @@ export function setupInteraction(
       ease: 'power2.out',
     });
 
-    // Scale up focused panel slightly for emphasis
+    // Scale up focused panel — less on landscape mobile where space is tight
+    const isLandscape = window.innerHeight < 500;
+    const fs = panel.baseScale * (isLandscape ? 1.0 : 1.2);
     gsap.to(panel.mesh.scale, {
-      x: 1.15,
-      y: 1.15,
-      z: 1.15,
+      x: fs,
+      y: fs,
+      z: fs,
       duration: 0.6,
       ease: 'power2.out',
     });
@@ -165,8 +225,12 @@ export function setupInteraction(
       }});
       focusSpot = null;
     }
+    gsap.killTweensOf(focusedPanel.mesh.position);
+    gsap.killTweensOf(focusedPanel.mesh.rotation);
+    gsap.killTweensOf(focusedPanel.mesh.scale);
+    const rs = focusedPanel.baseScale;
     gsap.to(focusedPanel.mesh.scale, {
-      x: 1, y: 1, z: 1,
+      x: rs, y: rs, z: rs,
       duration: 0.6,
       ease: 'power2.out',
     });
@@ -208,12 +272,14 @@ export function setupInteraction(
   /* ------------------------------------------------------------------ */
   function onHoverEnter(panel: PanelData): void {
     canvas.style.cursor = 'pointer';
-    gsap.to(panel.mesh.scale, { x: 1.08, y: 1.08, z: 1.08, duration: 0.3 });
+    const s = panel.baseScale * 1.1;
+    gsap.to(panel.mesh.scale, { x: s, y: s, z: s, duration: 0.3 });
   }
 
   function onHoverLeave(panel: PanelData): void {
     canvas.style.cursor = 'default';
-    gsap.to(panel.mesh.scale, { x: 1, y: 1, z: 1, duration: 0.3 });
+    const s = panel.baseScale;
+    gsap.to(panel.mesh.scale, { x: s, y: s, z: s, duration: 0.3 });
     gsap.to(panel.mesh.rotation, {
       x: panel.baseRotation.x,
       y: panel.baseRotation.y,
@@ -288,6 +354,7 @@ export function setupInteraction(
   function dispose(): void {
     canvas.removeEventListener('pointermove', onPointerMove);
     canvas.removeEventListener('pointerdown', onPointerDown);
+    canvas.removeEventListener('touchstart', onTouchStart);
   }
 
   /* ------------------------------------------------------------------ */

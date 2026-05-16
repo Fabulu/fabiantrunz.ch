@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import gsap from 'gsap';
 import type { Project } from '../data/projects';
 import { createPanelTexture, createPanelTextureWithIcon, createAboutTexture, preloadIcons } from './canvas-texture';
 import { projects } from '../data/projects';
@@ -9,6 +10,7 @@ export interface PanelData {
   project: Project;
   basePosition: THREE.Vector3;
   baseRotation: THREE.Euler;
+  baseScale: number;
   texture: THREE.CanvasTexture;
   material: THREE.MeshPhysicalMaterial;
 }
@@ -24,10 +26,14 @@ export async function createPanels(
 
   // Circle panel — CircleGeometry (front face with proper UVs)
   const radius = 0.6;
+  const featuredRadius = 0.75; // ReadZen flagship panel
   const frontGeo = new THREE.CircleGeometry(radius, 48);
   const backGeo = new THREE.CircleGeometry(radius, 48);
+  const featuredFrontGeo = new THREE.CircleGeometry(featuredRadius, 48);
+  const featuredBackGeo = new THREE.CircleGeometry(featuredRadius, 48);
   // Back face: flip to face the other direction
   backGeo.rotateY(Math.PI);
+  featuredBackGeo.rotateY(Math.PI);
   const panels: PanelData[] = [];
 
   for (let i = 0; i < projects.length; i++) {
@@ -60,15 +66,16 @@ export async function createPanels(
       emissiveIntensity: 0,
     });
     material.toneMapped = false; // bypass ACES — colorSpace fix handles correctness
-    material.side = THREE.FrontSide;
+    material.side = THREE.DoubleSide;
 
     // Back material — simple, no texture
     const backMaterial = new THREE.MeshBasicMaterial({
       color: theme === 'light' ? 0xe8e8f0 : 0x1a1a2e,
     });
 
-    const frontMesh = new THREE.Mesh(frontGeo, material);
-    const backMesh = new THREE.Mesh(backGeo, backMaterial);
+    const isFeatured = i === 0; // ReadZen
+    const frontMesh = new THREE.Mesh(isFeatured ? featuredFrontGeo : frontGeo, material);
+    const backMesh = new THREE.Mesh(isFeatured ? featuredBackGeo : backGeo, backMaterial);
     backMesh.position.z = -0.01; // tiny offset behind front
 
     // Use a Group as the "mesh" for positioning
@@ -90,12 +97,56 @@ export async function createPanels(
 
     scene.add(mesh);
 
+    // ReadZen flagship — pulsing golden glow (no rotation — conflicts with tilt/focus)
+    if (isFeatured) {
+      material.emissive = new THREE.Color(0xd4a017);
+      material.emissiveIntensity = 0;
+      gsap.to(material, {
+        emissiveIntensity: 0.15,
+        duration: 1.5,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+      });
+
+      // Particle halo — small orbiting points
+      const particleCount = 20;
+      const positions = new Float32Array(particleCount * 3);
+      for (let p = 0; p < particleCount; p++) {
+        const angle = (p / particleCount) * Math.PI * 2;
+        const r2 = 0.85 + Math.random() * 0.15;
+        positions[p * 3] = Math.cos(angle) * r2;
+        positions[p * 3 + 1] = Math.sin(angle) * r2;
+        positions[p * 3 + 2] = (Math.random() - 0.5) * 0.1;
+      }
+      const particleGeo = new THREE.BufferGeometry();
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const particleMat = new THREE.PointsMaterial({
+        color: 0xf59e0b,
+        size: 0.04,
+        transparent: true,
+        opacity: 0.6,
+        depthWrite: false,
+      });
+      const particles = new THREE.Points(particleGeo, particleMat);
+      mesh.add(particles);
+
+      // Slowly rotate the particle ring
+      gsap.to(particles.rotation, {
+        z: Math.PI * 2,
+        duration: 20,
+        repeat: -1,
+        ease: 'none',
+      });
+    }
+
     panels.push({
       mesh,
       frontMesh,
       project,
       basePosition,
       baseRotation,
+      baseScale: 1.0,
       texture,
       material,
     });
@@ -150,6 +201,7 @@ export async function createPanels(
     project: aboutProject,
     basePosition: new THREE.Vector3(0, -1.1, 0.1),
     baseRotation: new THREE.Euler(0, 0, 0),
+    baseScale: 0.85,
     texture: aboutTexture,
     material: aboutMaterial,
   });

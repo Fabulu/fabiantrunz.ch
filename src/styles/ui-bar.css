@@ -17,6 +17,7 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   transition: opacity 600ms ease;
+  pointer-events: none;
 }
 
 .ui-bar--hidden {

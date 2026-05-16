@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(unzip -l popup-tent.zip)",
+      "Bash(unzip -l /c/Programmieren/PlayerOne/AppIcons.zip)",
+      "Bash(powershell -File init-run.ps1 portfolio-v1-planning)",
+      "Bash(gh --version)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(git:*)",
+      "Bash(npx wrangler:*)",
+      "Read(//c/Users/Fabian Trunz/.wrangler/config/**)",
+      "Read(//c/Users/Fabian Trunz/.wrangler/**)",
+      "Bash(curl -s -X GET 'https://api.cloudflare.com/client/v4/zones?name=fabiantrunz.ch' -H 'Authorization: Bearer Z-qH0wnE_zW9PWLGOFmMODuWsbBG8lhAt6dhWcN_7Fw.NoYBorkXG-gqpe7TWlioxkyvWE4rE4aYnDH0P6JiYxs' -H 'Content-Type: application/json')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s -X POST https://api.cloudflare.com/client/v4/zones/f7922b84ae9f2986a5c8bd07dfe475fd/dns_records -H 'Authorization: Bearer Z-qH0wnE_zW9PWLGOFmMODuWsbBG8lhAt6dhWcN_7Fw.NoYBorkXG-gqpe7TWlioxkyvWE4rE4aYnDH0P6JiYxs' -H 'Content-Type: application/json' --data '{\"type\":\"MX\",\"name\":\"fabiantrunz.ch\",\"content\":\"mta-gw.infomaniak.ch\",\"priority\":10,\"ttl\":3600}')",
+      "Bash(gh repo:*)"
+    ]
+  }
+}

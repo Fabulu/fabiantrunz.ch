@@ -71,7 +71,7 @@ export const projects: Project[] = [
     titleKey: 'Who Goes First?',
     taglineKey: 'project.whogoesfirst.tagline',
     descriptionKey: 'project.whogoesfirst.description',
-    tags: ['Flutter', 'Multi-touch', 'i18n'],
+    tags: ['Flutter', 'Multi-touch', '12 Languages'],
     icon: '/icons/whogoesfirst.png',
     links: [
       { type: 'website', url: 'https://whogoesfirst.pages.dev', labelKey: 'project.links.website' },
@@ -80,7 +80,7 @@ export const projects: Project[] = [
   {
     id: 'openzen',
     featured: false,
-    titleKey: 'OpenZen Texts',
+    titleKey: 'Open Zen',
     taglineKey: 'project.openzen.tagline',
     descriptionKey: 'project.openzen.description',
     tags: ['Digital Humanities', 'TEI XML', 'Textual Criticism'],

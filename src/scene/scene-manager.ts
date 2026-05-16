@@ -72,12 +72,16 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
 
     interaction.update();
 
-    // Cursor light follows mouse — project NDC to world position at z=2
-    const cursorWorldX = interaction.mouse.x * 3.5;
-    const cursorWorldY = interaction.mouse.y * 2.0 + 0.3;
-    lightingRig.cursorLight.position.x += (cursorWorldX - lightingRig.cursorLight.position.x) * 0.3;
-    lightingRig.cursorLight.position.y += (cursorWorldY - lightingRig.cursorLight.position.y) * 0.3;
-    lightingRig.cursorLight.position.z = 2.5;
+    // Cursor light follows mouse — unproject NDC to world at panel plane (z=0),
+    // then position the light slightly in front of the panels so it illuminates them
+    const nearPlane = new THREE.Vector3(interaction.mouse.x, interaction.mouse.y, 0.5);
+    nearPlane.unproject(camera);
+    const rayDir = nearPlane.sub(camera.position).normalize();
+    const t = -camera.position.z / rayDir.z; // intersect z=0
+    const hitPoint = camera.position.clone().add(rayDir.multiplyScalar(t));
+    // Position light directly at cursor's world position on the panel plane
+    // With soft clearcoat (roughness 0.65), specular is broad enough not to need overshoot
+    lightingRig.cursorLight.position.set(hitPoint.x, hitPoint.y, 1.0);
 
     renderer.render(scene, camera);
   }

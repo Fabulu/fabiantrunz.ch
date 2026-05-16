@@ -61,8 +61,8 @@ export const translations: Record<string, { de: string; en: string }> = {
     en: "Critical editions of ancient Chinese Zen texts",
   },
   "project.openzen.description": {
-    de: "Wissenschaftliche kritische Edition mit Herkunftsnachverfolgung. Enthält über 100 historische Holzschnittausgaben-Zeugen aus Nationalbibliotheken in Japan, Korea, Taiwan und China. Umfasst den Wumenguan-Holzschnitt von 1632, ein Stemma zu Xinxinming und eine offene, nachvollziehbare Methodik.",
-    en: "Scholarly critical edition with provenance tracking. Includes 100+ historical woodblock edition witnesses from national libraries across Japan, Korea, Taiwan, and China. Features the 1632 Wumenguan woodblock edition, a Faith in Mind stemma, and an open-source methodology.",
+    de: "Drei fertige kritische Editionen altchinesischer Zen-Texte: Xinxinming, Wumenguan (Leseausgabe) und Zhengdaoge. Jede Edition wird aus über 100 historischen Holzschnittquellen erstellt — mit vollständiger Herkunftsnachverfolgung jedes OCR- und Editionsschrittes. Das Projekt wächst stetig.",
+    en: "Three completed critical editions of ancient Chinese Zen texts: Hsin Hsin Ming, Wumenguan (reading edition), and Song of Enlightenment. Each edition is built from 100+ historical woodblock sources — with full provenance tracking of every OCR and editorial step. The project is actively growing.",
   },
 
   // Project links

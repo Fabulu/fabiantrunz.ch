@@ -25,6 +25,9 @@ export function setupInteraction(
   let hoveredPanel: PanelData | null = null;
   let focusedPanel: PanelData | null = null;
 
+  // Spotlight for focused panel
+  let focusSpot: THREE.PointLight | null = null;
+
   // Edge outline for focused panel (RingGeometry approach)
   let outlineMesh: THREE.Mesh | null = null;
   const outlineRingGeo = new THREE.RingGeometry(0.59, 0.63, 48);
@@ -121,8 +124,16 @@ export function setupInteraction(
       ease: 'power2.out',
     });
 
-    // Create glowing halo ring behind the panel
+    // Create edge outline
     createOutline(panel);
+
+    // Add a dedicated light on the focused panel — offset above & right
+    // to avoid specular flare landing on the title text
+    focusSpot = new THREE.PointLight(0xffffff, 8, 6, 1.5);
+    focusSpot.position.set(-0.5, 1.2, 3.0);
+    panels[0].mesh.parent!.add(focusSpot);
+    focusSpot.intensity = 0;
+    gsap.to(focusSpot, { intensity: 8, duration: 0.5 });
 
     // Fade other panels
     for (const p of panels) {
@@ -144,8 +155,16 @@ export function setupInteraction(
   function unfocusPanel(): void {
     if (!focusedPanel) return;
 
-    // Remove halo and scale
+    // Remove outline and focus spotlight
     removeOutline();
+    if (focusSpot) {
+      const spot = focusSpot;
+      gsap.to(spot, { intensity: 0, duration: 0.3, onComplete: () => {
+        spot.removeFromParent();
+        spot.dispose();
+      }});
+      focusSpot = null;
+    }
     gsap.to(focusedPanel.mesh.scale, {
       x: 1, y: 1, z: 1,
       duration: 0.6,

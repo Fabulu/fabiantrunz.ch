@@ -51,13 +51,24 @@ function drawTitleAndTags(
   tagsY: number,
 ): void {
   ctx.fillStyle = fgColor(theme);
-  ctx.font = `bold 36px ${FONT_FAMILY}`;
+  ctx.font = `bold 52px ${FONT_FAMILY}`;
   ctx.textAlign = 'center';
   ctx.fillText(project.titleKey, CANVAS_W / 2, titleY, 460);
 
+  // Subtitles — wrap if too long
   ctx.fillStyle = mutedColor(theme);
-  ctx.font = `18px ${FONT_FAMILY}`;
-  ctx.fillText(project.tags.slice(0, 3).join(' \u00b7 '), CANVAS_W / 2, tagsY, 460);
+  ctx.font = `28px ${FONT_FAMILY}`;
+  const tagText = project.tags.slice(0, 3).join(' \u00b7 ');
+  const maxWidth = 420;
+  if (ctx.measureText(tagText).width > maxWidth) {
+    // Split at middle dot and wrap
+    const parts = project.tags.slice(0, 3);
+    const half = Math.ceil(parts.length / 2);
+    ctx.fillText(parts.slice(0, half).join(' \u00b7 '), CANVAS_W / 2, tagsY, maxWidth);
+    ctx.fillText(parts.slice(half).join(' \u00b7 '), CANVAS_W / 2, tagsY + 34, maxWidth);
+  } else {
+    ctx.fillText(tagText, CANVAS_W / 2, tagsY, maxWidth);
+  }
 }
 
 function createCanvas(): [HTMLCanvasElement, CanvasRenderingContext2D] {

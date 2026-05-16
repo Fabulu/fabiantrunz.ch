@@ -48,13 +48,13 @@ export async function createPanels(
     const material = new THREE.MeshPhysicalMaterial({
       map: texture,
       color: 0xffffff,
-      metalness: 0.1,
-      roughness: 0.4,          // low roughness = shiny specular highlights
-      clearcoat: 0.7,          // glossy lacquer layer
-      clearcoatRoughness: 0.15,
-      envMapIntensity: 0,      // no environment IBL (was the veil cause)
+      metalness: 0.05,
+      roughness: 0.75,         // high roughness = no base specular hotspot
+      clearcoat: 0.9,          // strong sheen layer
+      clearcoatRoughness: 0.50,
+      envMapIntensity: 0,
       envMap: null,
-      reflectivity: 0.3,
+      reflectivity: 0,
       transmission: 0,
       emissive: 0x000000,
       emissiveIntensity: 0,

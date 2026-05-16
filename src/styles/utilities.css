@@ -1,0 +1,105 @@
+/* ============================================================
+   Utility Classes — fabiantrunz.ch
+   ============================================================ */
+
+/* ── Container ───────────────────────────────────────────── */
+
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--spacing-md);
+}
+
+@media (min-width: 600px) {
+  .container {
+    padding-inline: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-inline: var(--spacing-xl);
+  }
+}
+
+/* ── Screen Reader Only ──────────────────────────────────── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Flex Utilities ──────────────────────────────────────── */
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+/* ── Gap Utilities ───────────────────────────────────────── */
+
+.gap-xs {
+  gap: var(--spacing-xs);
+}
+
+.gap-sm {
+  gap: var(--spacing-sm);
+}
+
+.gap-md {
+  gap: var(--spacing-md);
+}
+
+.gap-lg {
+  gap: var(--spacing-lg);
+}
+
+.gap-xl {
+  gap: var(--spacing-xl);
+}
+
+/* ── Section ─────────────────────────────────────────────── */
+
+.section {
+  padding-block: var(--spacing-3xl);
+}
+
+@media (min-width: 600px) {
+  .section {
+    padding-block: var(--spacing-4xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .section {
+    padding-block: var(--spacing-5xl);
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "portfolio",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name=fabiantrunz --branch=main"
+  },
+  "devDependencies": {
+    "@types/three": "^0.184.1",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0",
+    "three": "^0.184.0"
+  }
+}

@@ -19,6 +19,8 @@ import { createBoxWalls, animateBoxOpen } from './transition/box-walls';
 import { scatterPanels, tickScatter, resetPanels } from './transition/panel-scatter';
 import { createDrivingUI } from '../components/driving-ui';
 import type { InputState } from './types';
+import { createAudioManager } from './audio/audio-manager';
+import { CONFIG } from './types';
 
 export interface DrivingMode {
   tick(dt: number): void;
@@ -40,11 +42,14 @@ export async function enterDrivingMode(
   const ui = createDrivingUI();
   ui.onExitClick(onExit);
 
+  const audio = await createAudioManager();
+
   // Box transition
   const walls = createBoxWalls(scene);
   const scatterState = scatterPanels(panels);
 
   await new Promise<void>(resolve => animateBoxOpen(walls, resolve));
+  audio.playEffect('box-open');
 
   // Remove gallery lighting from scene (don't dispose — restored on exit)
   scene.remove(galleryLightingRig.ambient);
@@ -92,6 +97,11 @@ export async function enterDrivingMode(
   // Show HUD
   ui.mount();
   setMode('driving');
+  audio.startEngine();
+  audio.playMusic();
+
+  let prevBoostActive = false;
+  let prevAirborne = false;
 
   function tick(dt: number): void {
     // Input
@@ -100,6 +110,14 @@ export async function enterDrivingMode(
     // Car physics
     carPhysics.tick(dt, input);
     const state = carPhysics.getState();
+
+    // Audio
+    audio.setEngineSpeed(Math.abs(state.velocity) / CONFIG.MAX_SPEED);
+    if (state.boostActive && !prevBoostActive) audio.playEffect('boost');
+    if (state.isAirborne && !prevAirborne) audio.playEffect('jump');
+    if (!state.isAirborne && prevAirborne) audio.playEffect('land');
+    prevBoostActive = state.boostActive;
+    prevAirborne = state.isAirborne;
 
     // Rapier sync
     carCollider.syncFromPhysics(state.position, state.heading);
@@ -156,6 +174,10 @@ export async function enterDrivingMode(
     // Camera reset
     camera.fov = 50;
     camera.updateProjectionMatrix();
+
+    audio.stopMusic();
+    audio.stopEngine();
+    audio.dispose();
 
     setMode('gallery');
   }

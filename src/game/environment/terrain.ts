@@ -141,7 +141,7 @@ function getZoneColor(x: number, z: number, h: number): [number, number, number]
 // --- Exports ---
 
 export function createTerrain(): THREE.Mesh {
-  const geometry = new PlaneGeometry(200, 200, 128, 128);
+  const geometry = new PlaneGeometry(200, 200, 256, 256);
   geometry.rotateX(-Math.PI / 2);
 
   const position = geometry.getAttribute('position');

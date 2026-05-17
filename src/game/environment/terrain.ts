@@ -62,15 +62,15 @@ function height(x: number, z: number): number {
 // --- Zone definitions ---
 
 const ZONES = [
-  { name: 'hilltop', cx: 0, cz: 0, r: 0x4a, g: 0x7c, b: 0x3f },
-  { name: 'mountain', cx: 50, cz: 0, r: 0x3a, g: 0x66, b: 0x33 },
-  { name: 'meadow', cx: 35, cz: -40, r: 0x5a, g: 0x9e, b: 0x4a },
-  { name: 'forest', cx: -35, cz: -40, r: 0x2d, g: 0x4a, b: 0x27 },
-  { name: 'canyon', cx: -50, cz: 0, r: 0xa0, g: 0x62, b: 0x2a },
-  { name: 'lake', cx: 0, cz: 50, r: 0xd4, g: 0xb4, b: 0x83 },
+  { name: 'hilltop', cx: 0, cz: 0, r: 0x2e, g: 0x6b, b: 0x1e },
+  { name: 'mountain', cx: 50, cz: 0, r: 0x1f, g: 0x52, b: 0x16 },
+  { name: 'meadow', cx: 35, cz: -40, r: 0x3d, g: 0x8c, b: 0x2a },
+  { name: 'forest', cx: -35, cz: -40, r: 0x1a, g: 0x3d, b: 0x12 },
+  { name: 'canyon', cx: -50, cz: 0, r: 0x7a, g: 0x44, b: 0x16 },
+  { name: 'lake', cx: 0, cz: 50, r: 0xb0, g: 0x80, b: 0x40 },
 ];
 
-const PATH_COLOR = { r: 0x9e, g: 0x7c, b: 0x4f };
+const PATH_COLOR = { r: 0x7c, g: 0x5a, b: 0x30 };
 const PATH_WIDTH = 3;
 
 // Path segments from origin to each zone center (skip hilltop — zero-length)

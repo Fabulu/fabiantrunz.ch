@@ -1,5 +1,9 @@
 export const translations: Record<string, { de: string; en: string }> = {
   // Navigation
+  "hero.3d_button": {
+    de: "3D-Modus starten",
+    en: "Enter 3D Mode",
+  },
   "nav.projects": {
     de: "Projekte",
     en: "Projects",

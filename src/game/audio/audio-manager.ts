@@ -1,9 +1,9 @@
 export interface AudioManager {
-  playMusic(): void;
+  playMusic(): Promise<void>;
   stopMusic(): void;
   playEffect(name: 'boost' | 'jump' | 'land' | 'rock-hit' | 'box-open'): void;
   setEngineSpeed(speed: number): void;
-  startEngine(): void;
+  startEngine(): Promise<void>;
   stopEngine(): void;
   setMuted(muted: boolean): void;
   isMuted(): boolean;
@@ -45,6 +45,8 @@ export async function createAudioManager(): Promise<AudioManager> {
   let muted = localStorage.getItem('audio-muted') === 'true';
   let volume = 1;
 
+  let decodeReady: Promise<void> | null = null;
+
   function ensureContext(): AudioContext {
     if (ctx) return ctx;
     ctx = new AudioContext();
@@ -67,8 +69,13 @@ export async function createAudioManager(): Promise<AudioManager> {
           .catch(() => { /* skip undecodable */ })
       );
     }
-    Promise.all(decodePromises).catch(() => {});
+    decodeReady = Promise.all(decodePromises).then(() => {}).catch(() => {});
     return ctx;
+  }
+
+  async function waitForDecode(): Promise<void> {
+    ensureContext();
+    if (decodeReady) await decodeReady;
   }
 
   function playBuffer(name: string, dest: GainNode, loop: boolean): AudioBufferSourceNode | null {
@@ -93,9 +100,9 @@ export async function createAudioManager(): Promise<AudioManager> {
   }
 
   return {
-    playMusic() {
+    async playMusic() {
       if (musicSource) return;
-      ensureContext();
+      await waitForDecode();
       musicGain.gain.value = 0.3;
       musicSource = playBuffer('music', musicGain, true);
     },
@@ -103,9 +110,9 @@ export async function createAudioManager(): Promise<AudioManager> {
       rampAndStop(musicGain, musicSource, 500);
       musicSource = null;
     },
-    startEngine() {
+    async startEngine() {
       if (engineSource) return;
-      ensureContext();
+      await waitForDecode();
       engineGain.gain.value = 0.5;
       engineSource = playBuffer('engine', engineGain, true);
     },

@@ -98,7 +98,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     // 11. Wheel spin — applied to inner wheelGroup (child[0] of each pivot)
     for (const pivot of car.wheels) {
       const wheelGroup = pivot.children[0];
-      if (wheelGroup) wheelGroup.rotation.x += velocity * dt * 3;
+      if (wheelGroup) wheelGroup.rotation.z += velocity * dt * 3;
     }
 
     // 12. Front wheel steering visual — applied to the pivot's Y rotation

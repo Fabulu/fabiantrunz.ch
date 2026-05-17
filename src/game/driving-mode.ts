@@ -96,6 +96,7 @@ export async function enterDrivingMode(
 
   // Show HUD
   ui.mount();
+  document.body.classList.add('driving-mode');
   setMode('driving');
   audio.startEngine();
   audio.playMusic();
@@ -179,6 +180,7 @@ export async function enterDrivingMode(
     audio.stopEngine();
     audio.dispose();
 
+    document.body.classList.remove('driving-mode');
     setMode('gallery');
   }
 

@@ -48,9 +48,9 @@ export function createRocks(
     const geo = new THREE.IcosahedronGeometry(radius, 1);
     const pos = geo.getAttribute('position');
     for (let v = 0; v < pos.count; v++) {
-      pos.setX(v, pos.getX(v) + (rand() - 0.5) * radius * 0.3);
-      pos.setY(v, pos.getY(v) + (rand() - 0.5) * radius * 0.3);
-      pos.setZ(v, pos.getZ(v) + (rand() - 0.5) * radius * 0.3);
+      pos.setX(v, pos.getX(v) + (rand() - 0.5) * radius * 0.1);
+      pos.setY(v, pos.getY(v) + (rand() - 0.5) * radius * 0.1);
+      pos.setZ(v, pos.getZ(v) + (rand() - 0.5) * radius * 0.1);
     }
     geo.computeVertexNormals();
 

@@ -22,7 +22,7 @@ function mockCarObject(): CarObject {
 
 // Helper: create a neutral input state
 function noInput(): InputState {
-  return { forward: false, backward: false, left: false, right: false, brake: false };
+  return { forward: false, backward: false, left: false, right: false, brake: false, boost: false, jump: false };
 }
 
 const DT = 1 / 60; // typical frame delta

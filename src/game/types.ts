@@ -6,6 +6,8 @@ export interface InputState {
   left: boolean;
   right: boolean;
   brake: boolean;
+  boost: boolean;
+  jump: boolean;
 }
 
 export interface CarObject {
@@ -20,6 +22,8 @@ export interface CarPhysicsState {
   velocity: number;
   heading: number;       // radians, 0 = +X direction
   steeringAngle: number;
+  isAirborne: boolean;
+  boostActive: boolean;
 }
 
 export interface GameConfig {
@@ -29,6 +33,12 @@ export interface GameConfig {
   FRICTION: number;
   TURN_RATE: number;
   WHEEL_BASE: number;
+  BOOST_MULTIPLIER: number;
+  BOOST_DURATION: number;
+  BOOST_COOLDOWN: number;
+  JUMP_FORCE: number;
+  GRAVITY: number;
+  BOOST_FOV: number;
 }
 
 export const CONFIG: GameConfig = {
@@ -38,4 +48,10 @@ export const CONFIG: GameConfig = {
   FRICTION: 0.97,
   TURN_RATE: 2.5,
   WHEEL_BASE: 2.0,
+  BOOST_MULTIPLIER: 1.8,
+  BOOST_DURATION: 2,
+  BOOST_COOLDOWN: 4,
+  JUMP_FORCE: 8,
+  GRAVITY: 15,
+  BOOST_FOV: 70,
 } as const;

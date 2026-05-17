@@ -1,6 +1,7 @@
 import { Vector3 } from 'three';
 import type { InputState, CarObject, CarPhysicsState } from '../types';
 import { CONFIG } from '../types';
+import { getHeightAt } from '../environment/terrain';
 
 export interface CarPhysicsController {
   tick(dt: number, input: InputState): void;
@@ -13,6 +14,12 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   let velocity = 0;
   let heading = 0;
   let steeringAngle = 0;
+  let verticalVelocity = 0;
+  let isAirborne = false;
+  let boostActive = false;
+  let boostTimer = 0;
+  let boostCooldown = 0;
+  let jumpConsumed = false; // edge detection: only jump once per key press
 
   function tick(dt: number, input: InputState): void {
     if (dt <= 0 || dt > 0.2) return; // skip zero or huge dt (tab unfocus)
@@ -27,8 +34,24 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     velocity *= Math.pow(CONFIG.FRICTION, dt * 60);
     // 5. Dead zone — snap to zero when nearly stopped
     if (Math.abs(velocity) < 0.01) velocity = 0;
+
+    // Boost logic
+    if (input.boost && boostCooldown <= 0 && !boostActive) {
+      boostActive = true;
+      boostTimer = CONFIG.BOOST_DURATION;
+    }
+    if (boostActive) {
+      boostTimer -= dt;
+      if (boostTimer <= 0) {
+        boostActive = false;
+        boostCooldown = CONFIG.BOOST_COOLDOWN;
+      }
+    }
+    if (boostCooldown > 0) boostCooldown = Math.max(0, boostCooldown - dt);
+    const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * CONFIG.BOOST_MULTIPLIER : CONFIG.MAX_SPEED;
+
     // 6. Clamp speed
-    velocity = Math.max(-CONFIG.MAX_SPEED / 3, Math.min(CONFIG.MAX_SPEED, velocity));
+    velocity = Math.max(-effectiveMaxSpeed / 3, Math.min(effectiveMaxSpeed, velocity));
 
     // 7. Steering lerp (clamped factor so it can't overshoot)
     const steerLerp = Math.min(1, 10 * dt);
@@ -40,12 +63,33 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       steeringAngle += (0 - steeringAngle) * steerLerp;
     }
 
-    // 8. Heading (steering only affects heading when car is moving)
-    heading += steeringAngle * (velocity / CONFIG.MAX_SPEED) * CONFIG.TURN_RATE * dt;
+    // 8. Heading (steering only affects heading when car is moving, reduced when airborne)
+    heading += steeringAngle * (velocity / CONFIG.MAX_SPEED) * CONFIG.TURN_RATE * dt * (isAirborne ? 0.3 : 1.0);
 
-    // 9. Position
+    // 9. Position (XZ)
     position.x += Math.cos(heading) * velocity * dt;
     position.z += Math.sin(heading) * velocity * dt;
+
+    // Terrain following + jump
+    const groundHeight = getHeightAt(position.x, position.z);
+    // Edge-detect jump: only trigger once per key press
+    if (input.jump && !isAirborne && !jumpConsumed) {
+      verticalVelocity = CONFIG.JUMP_FORCE;
+      isAirborne = true;
+      jumpConsumed = true;
+    }
+    if (!input.jump) jumpConsumed = false;
+    if (isAirborne) {
+      verticalVelocity -= CONFIG.GRAVITY * dt;
+      position.y += verticalVelocity * dt;
+      if (position.y <= groundHeight) {
+        position.y = groundHeight;
+        verticalVelocity = 0;
+        isAirborne = false;
+      }
+    } else {
+      position.y = groundHeight;
+    }
 
     // 10. Sync car group
     car.group.position.copy(position);
@@ -69,15 +113,23 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       velocity,
       heading,
       steeringAngle,
+      isAirborne,
+      boostActive,
     };
   }
 
   function reset(): void {
-    position.set(0, 0, 0);
+    position.set(0, getHeightAt(0, 0), 0);
     velocity = 0;
     heading = 0;
     steeringAngle = 0;
-    car.group.position.set(0, 0, 0);
+    verticalVelocity = 0;
+    isAirborne = false;
+    boostActive = false;
+    boostTimer = 0;
+    boostCooldown = 0;
+    jumpConsumed = false;
+    car.group.position.set(0, getHeightAt(0, 0), 0);
     car.group.rotation.set(0, 0, 0);
   }
 

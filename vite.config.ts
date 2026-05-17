@@ -5,6 +5,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     target: 'es2020',
+    chunkSizeWarningLimit: 2500,
     rollupOptions: {
       output: {
         manualChunks: {

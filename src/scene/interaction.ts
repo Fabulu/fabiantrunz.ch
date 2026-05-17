@@ -10,6 +10,7 @@ export interface InteractionState {
   focusedPanel: PanelData | null;
   update(): void;
   dispose(): void;
+  setEnabled(v: boolean): void;
 }
 
 export function setupInteraction(
@@ -24,6 +25,16 @@ export function setupInteraction(
 
   let hoveredPanel: PanelData | null = null;
   let focusedPanel: PanelData | null = null;
+  let enabled = true;
+
+  function setEnabled(v: boolean): void {
+    enabled = v;
+    if (!v) {
+      if (hoveredPanel) onHoverLeave(hoveredPanel);
+      hoveredPanel = null;
+      canvas.style.cursor = 'default';
+    }
+  }
 
   // Spotlight for focused panel
   let focusSpot: THREE.PointLight | null = null;
@@ -89,6 +100,7 @@ export function setupInteraction(
   let tapHandled = false;
 
   function handleTap(clientX: number, clientY: number): boolean {
+    if (!enabled) return false;
     if (tapHandled) return false;
     if (focusedPanel) return false;
 
@@ -292,6 +304,7 @@ export function setupInteraction(
   /*  Per-frame update                                                  */
   /* ------------------------------------------------------------------ */
   function update(): void {
+    if (!enabled) return;
     // --- Raycasting ---
     raycaster.setFromCamera(mouse, camera);
     const frontMeshes = panels.map((p) => p.frontMesh);
@@ -370,6 +383,7 @@ export function setupInteraction(
     },
     update,
     dispose,
+    setEnabled,
   };
 
   return state;

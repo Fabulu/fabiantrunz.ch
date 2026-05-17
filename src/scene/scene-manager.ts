@@ -5,6 +5,10 @@ import { createPanels, transitionPanelMaterials, updatePanelTextures } from './p
 import type { PanelData } from './panels';
 import { setupInteraction } from './interaction';
 import { getCurrentTheme } from '../theme';
+import { getMode } from '../game/game-state';
+import { enterDrivingMode } from '../game/driving-mode';
+import type { DrivingMode } from '../game/driving-mode';
+import type { PreloadedAssets } from '../game/preload';
 
 // Responsive layout positions
 const DESKTOP_POSITIONS: [number, number, number][] = [
@@ -101,6 +105,8 @@ function applyLayout(
 export interface SceneAPI {
   onThemeChange(theme: 'light' | 'dark'): void;
   onLangChange(): void;
+  enterDriving(assets: PreloadedAssets): Promise<void>;
+  exitDriving(): void;
   dispose(): void;
 }
 
@@ -150,16 +156,34 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   // 7. Interaction
   const interaction = setupInteraction(camera, panels, renderer.domElement, cameraBasePosition);
 
-  // 8 & 9. Render loop with idle bob
+  // 8. Driving mode state
+  let drivingMode: DrivingMode | null = null;
+
+  // 9. Render loop
   const clock = new THREE.Clock();
   let animationId: number;
 
   function animate() {
     animationId = requestAnimationFrame(animate);
 
+    const dt = clock.getDelta();
     const time = clock.getElapsedTime();
+    const mode = getMode();
 
-    // Idle bob animation
+    // Driving mode — delegate to driving-mode tick
+    if (mode === 'driving' && drivingMode) {
+      drivingMode.tick(dt);
+      renderer.render(scene, camera);
+      return;
+    }
+
+    // Transitioning — just render, no gallery interaction
+    if (mode === 'transitioning') {
+      renderer.render(scene, camera);
+      return;
+    }
+
+    // Gallery mode
     panels.forEach((panel, i) => {
       if (!interaction.focusedPanel) {
         panel.mesh.position.y =
@@ -169,15 +193,12 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
 
     interaction.update();
 
-    // Cursor light follows mouse — unproject NDC to world at panel plane (z=0),
-    // then position the light slightly in front of the panels so it illuminates them
+    // Cursor light follows mouse
     const nearPlane = new THREE.Vector3(interaction.mouse.x, interaction.mouse.y, 0.5);
     nearPlane.unproject(camera);
     const rayDir = nearPlane.sub(camera.position).normalize();
-    const t = -camera.position.z / rayDir.z; // intersect z=0
+    const t = -camera.position.z / rayDir.z;
     const hitPoint = camera.position.clone().add(rayDir.multiplyScalar(t));
-    // Position light directly at cursor's world position on the panel plane
-    // With soft clearcoat (roughness 0.65), specular is broad enough not to need overshoot
     lightingRig.cursorLight.position.set(hitPoint.x, hitPoint.y, 1.0);
 
     renderer.render(scene, camera);
@@ -201,6 +222,21 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   // 11. Body class
   document.body.classList.add('scene-active');
 
+  // Exit driving helper (needs to be a named function so enterDriving can reference it)
+  function exitDrivingFn() {
+    if (drivingMode) {
+      drivingMode.dispose();
+      drivingMode = null;
+    }
+    interaction.setEnabled(true);
+    camera.position.copy(cameraBasePosition);
+    camera.lookAt(0, cameraBasePosition.y, 0);
+    camera.fov = 50;
+    camera.updateProjectionMatrix();
+    applyLayout(panels, camera, cameraBasePosition,
+      container.clientWidth, container.clientHeight, true);
+  }
+
   // Return API
   return {
     onThemeChange(newTheme: 'light' | 'dark') {
@@ -212,6 +248,16 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
     onLangChange() {
       updatePanelTextures(panels, getCurrentTheme() === 'light' ? 'light' : 'dark');
     },
+
+    async enterDriving(assets: PreloadedAssets) {
+      interaction.setEnabled(false);
+      drivingMode = await enterDrivingMode(
+        scene, camera, renderer, panels, lightingRig, assets,
+        exitDrivingFn,
+      );
+    },
+
+    exitDriving: exitDrivingFn,
 
     dispose() {
       cancelAnimationFrame(animationId);

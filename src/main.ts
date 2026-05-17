@@ -3,9 +3,10 @@ import { initTheme } from './theme';
 import { initLang, translatePage } from './i18n';
 import { createHeader } from './components/header';
 import { createOverlay } from './components/overlay';
-// import { createUiBar } from './components/ui-bar';
+import { createDrivingUI } from './components/driving-ui';
 import { initScene, type SceneAPI } from './scene/scene-manager';
 import { createFallbackView } from './fallback/css-panels';
+import { preloadGameAssets } from './game/preload';
 
 function hasWebGL(): boolean {
   try {
@@ -31,11 +32,8 @@ async function main(): Promise<void> {
   wrapper.className = 'scene-wrapper';
   app.appendChild(wrapper);
 
-  // Overlay (appended to body, above everything, pointer-events:none when inactive)
+  // Overlay (appended to body, above everything)
   document.body.appendChild(createOverlay());
-
-  // UI hint bar — disabled, was interfering with bottom taps
-  // document.body.appendChild(createUiBar());
 
   let sceneApi: SceneAPI | null = null;
 
@@ -49,6 +47,24 @@ async function main(): Promise<void> {
   } else {
     wrapper.appendChild(createFallbackView());
   }
+
+  // Preload game assets in background (WASM, terrain, car, sky)
+  const assetsPromise = preloadGameAssets().catch((e) => {
+    console.warn('Game asset preloading failed:', e);
+    return null;
+  });
+
+  // Driving UI — "Enter 3D Mode" button + HUD
+  const drivingUI = createDrivingUI();
+  drivingUI.onEnterClick(async () => {
+    const assets = await assetsPromise;
+    if (assets && sceneApi) {
+      await sceneApi.enterDriving(assets);
+    }
+  });
+  drivingUI.onExitClick(() => {
+    sceneApi?.exitDriving();
+  });
 
   // Wire theme changes to scene
   document.addEventListener('theme-changed', ((e: CustomEvent) => {

@@ -10,6 +10,7 @@ export default defineConfig({
         manualChunks: {
           three: ['three'],
           gsap: ['gsap'],
+          rapier: ['@dimforge/rapier3d-compat'],
         },
       },
     },

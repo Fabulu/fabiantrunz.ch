@@ -6,6 +6,7 @@ import { getHeightAt } from '../environment/terrain';
 export interface CarPhysicsController {
   tick(dt: number, input: InputState): void;
   getState(): CarPhysicsState;
+  correctPosition(x: number, z: number, vel: number): void;
   reset(): void;
 }
 
@@ -17,8 +18,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   let verticalVelocity = 0;
   let isAirborne = false;
   let boostActive = false;
-  let boostTimer = 0;
-  let boostCooldown = 0;
+  let boostCharge = 1.0;
   let jumpConsumed = false; // edge detection: only jump once per key press
 
   function tick(dt: number, input: InputState): void {
@@ -35,19 +35,15 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     // 5. Dead zone — snap to zero when nearly stopped
     if (Math.abs(velocity) < 0.01) velocity = 0;
 
-    // Boost logic
-    if (input.boost && boostCooldown <= 0 && !boostActive) {
+    // Boost logic — hold to drain, release to recharge
+    if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE) {
       boostActive = true;
-      boostTimer = CONFIG.BOOST_DURATION;
+      boostCharge = Math.max(0, boostCharge - CONFIG.BOOST_DRAIN_RATE * dt);
+      if (boostCharge <= 0) boostActive = false;
+    } else {
+      boostActive = false;
+      boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
     }
-    if (boostActive) {
-      boostTimer -= dt;
-      if (boostTimer <= 0) {
-        boostActive = false;
-        boostCooldown = CONFIG.BOOST_COOLDOWN;
-      }
-    }
-    if (boostCooldown > 0) boostCooldown = Math.max(0, boostCooldown - dt);
     const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * CONFIG.BOOST_MULTIPLIER : CONFIG.MAX_SPEED;
 
     // 6. Clamp speed
@@ -115,6 +111,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       steeringAngle,
       isAirborne,
       boostActive,
+      boostCharge,
     };
   }
 
@@ -126,12 +123,19 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     verticalVelocity = 0;
     isAirborne = false;
     boostActive = false;
-    boostTimer = 0;
-    boostCooldown = 0;
+    boostCharge = 1.0;
     jumpConsumed = false;
     car.group.position.set(0, getHeightAt(0, 0), 0);
     car.group.rotation.set(0, 0, 0);
   }
 
-  return { tick, getState, reset };
+  function correctPosition(x: number, z: number, vel: number): void {
+    position.x = x;
+    position.z = z;
+    if (!isAirborne) position.y = getHeightAt(x, z);
+    velocity = vel;
+    car.group.position.copy(position);
+  }
+
+  return { tick, getState, correctPosition, reset };
 }

@@ -24,6 +24,7 @@ export interface CarPhysicsState {
   steeringAngle: number;
   isAirborne: boolean;
   boostActive: boolean;
+  boostCharge: number;   // 0..1 normalized charge level
 }
 
 export interface GameConfig {
@@ -34,8 +35,9 @@ export interface GameConfig {
   TURN_RATE: number;
   WHEEL_BASE: number;
   BOOST_MULTIPLIER: number;
-  BOOST_DURATION: number;
-  BOOST_COOLDOWN: number;
+  BOOST_DRAIN_RATE: number;
+  BOOST_RECHARGE_RATE: number;
+  BOOST_MIN_ACTIVATE: number;
   JUMP_FORCE: number;
   GRAVITY: number;
   BOOST_FOV: number;
@@ -48,10 +50,11 @@ export const CONFIG: GameConfig = {
   FRICTION: 0.97,
   TURN_RATE: 2.5,
   WHEEL_BASE: 2.0,
-  BOOST_MULTIPLIER: 1.8,
-  BOOST_DURATION: 2,
-  BOOST_COOLDOWN: 4,
+  BOOST_MULTIPLIER: 3.0,
+  BOOST_DRAIN_RATE: 0.4,
+  BOOST_RECHARGE_RATE: 0.25,
+  BOOST_MIN_ACTIVATE: 0.15,
   JUMP_FORCE: 8,
   GRAVITY: 15,
-  BOOST_FOV: 70,
+  BOOST_FOV: 80,
 } as const;

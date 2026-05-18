@@ -6,6 +6,8 @@ export interface AudioManager {
   setEngineSpeed(speed: number): void;
   startEngine(): Promise<void>;
   stopEngine(): void;
+  startBoostLoop(): void;
+  stopBoostLoop(): void;
   setMuted(muted: boolean): void;
   isMuted(): boolean;
   setVolume(volume: number): void;
@@ -44,8 +46,10 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
   let masterGain: GainNode;
   let musicGain: GainNode;
   let engineGain: GainNode;
+  let boostGain: GainNode;
   let musicSource: AudioBufferSourceNode | null = null;
   let engineSource: AudioBufferSourceNode | null = null;
+  let boostSource: AudioBufferSourceNode | null = null;
   let muted = localStorage.getItem('audio-muted') === 'true';
   let volume = 1;
 
@@ -61,8 +65,11 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     musicGain.gain.value = 0.3;
     musicGain.connect(masterGain);
     engineGain = ctx.createGain();
-    engineGain.gain.value = 0.5;
+    engineGain.gain.value = 0.35;
     engineGain.connect(masterGain);
+    boostGain = ctx.createGain();
+    boostGain.gain.value = 0.4;
+    boostGain.connect(masterGain);
 
     const decodePromises: Array<Promise<void>> = [];
     for (const [name, raw] of rawBuffers) {
@@ -120,12 +127,21 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     async startEngine() {
       if (engineSource) return;
       await waitForDecode();
-      engineGain.gain.value = 0.5;
+      engineGain.gain.value = 0.35;
       engineSource = playBuffer('engine', engineGain, true);
     },
     stopEngine() {
       rampAndStop(engineGain, engineSource, 100);
       engineSource = null;
+    },
+    startBoostLoop() {
+      if (boostSource) return;
+      boostGain.gain.value = 0.4;
+      boostSource = playBuffer('boost', boostGain, true);
+    },
+    stopBoostLoop() {
+      rampAndStop(boostGain, boostSource, 150);
+      boostSource = null;
     },
     setEngineSpeed(speed: number) {
       if (!engineSource) return;
@@ -152,8 +168,10 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     dispose() {
       try { musicSource?.stop(); } catch { /* */ }
       try { engineSource?.stop(); } catch { /* */ }
+      try { boostSource?.stop(); } catch { /* */ }
       musicSource = null;
       engineSource = null;
+      boostSource = null;
       if (ctx) { ctx.close().catch(() => {}); ctx = null; }
     },
   };

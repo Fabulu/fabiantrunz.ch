@@ -65,53 +65,49 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   };
 }
 
-export function animateBoxOpen(walls: BoxWalls, onComplete: () => void): void {
-  const tl = gsap.timeline({
-    onComplete: () => {
-      walls.dispose();
-      onComplete();
-    },
-  });
+/** Returns a GSAP timeline for the wall opening. Caller embeds at desired offset. */
+export function createWallOpenTimeline(walls: BoxWalls): gsap.core.Timeline {
+  const tl = gsap.timeline();
 
-  // Front: rotate down (hinge at bottom)
+  // Front: rotate down slowly (hinge at bottom)
   tl.to(walls.front.rotation, {
     x: -Math.PI / 2,
-    duration: 1.5,
-    ease: 'power2.in',
+    duration: 2.3,
+    ease: 'power1.inOut',
   }, 0);
 
   // Left: rotate outward (hinge at left)
   tl.to(walls.left.rotation, {
     y: Math.PI / 2,
-    duration: 1.5,
-    ease: 'power2.in',
-  }, 0.1);
+    duration: 2.3,
+    ease: 'power1.inOut',
+  }, 0.15);
 
   // Right: rotate outward (hinge at right)
   tl.to(walls.right.rotation, {
     y: -Math.PI / 2,
-    duration: 1.5,
-    ease: 'power2.in',
-  }, 0.1);
+    duration: 2.3,
+    ease: 'power1.inOut',
+  }, 0.15);
 
   // Top: rotate up (hinge at top) + fade
   const topMaterial = (walls.top.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
   tl.to(walls.top.rotation, {
     x: Math.PI / 2,
-    duration: 1.2,
-    ease: 'power2.in',
+    duration: 2.0,
+    ease: 'power1.inOut',
   }, 0.3);
   tl.to(topMaterial, {
     opacity: 0,
-    duration: 1.2,
-    ease: 'power2.in',
+    duration: 2.0,
   }, 0.3);
 
   // Back: fade out
   const backMaterial = (walls.back.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
   tl.to(backMaterial, {
     opacity: 0,
-    duration: 1,
-    ease: 'power2.in',
+    duration: 2.0,
   }, 0.2);
+
+  return tl;
 }

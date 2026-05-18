@@ -1,7 +1,7 @@
 export interface DrivingUI {
   mount(): void;
   unmount(): void;
-  update(speed: number, boostActive: boolean, boostCooldown: number): void;
+  update(speed: number, boostActive: boolean, boostCharge: number): void;
   onEnterClick(cb: () => void): void;
   onExitClick(cb: () => void): void;
 }
@@ -46,25 +46,44 @@ export function createDrivingUI(): DrivingUI {
   // Speed display (bottom-center)
   const speedEl = document.createElement("div");
   Object.assign(speedEl.style, {
-    position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)",
+    position: "absolute", bottom: "56px", left: "50%", transform: "translateX(-50%)",
     fontSize: "18px", color: "white", textShadow: "0 1px 4px rgba(0,0,0,0.7)",
     fontFamily: "monospace",
   });
   speedEl.textContent = "0 km/h";
 
-  // Boost indicator (below speed)
-  const boostEl = document.createElement("div");
-  Object.assign(boostEl.style, {
-    position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)",
-    fontSize: "14px", fontFamily: "monospace",
-    textShadow: "0 1px 4px rgba(0,0,0,0.7)",
+  // Nitro label
+  const nitroLabel = document.createElement("div");
+  Object.assign(nitroLabel.style, {
+    position: "absolute", bottom: "36px", left: "50%", transform: "translateX(-50%)",
+    fontSize: "11px", fontFamily: "monospace", letterSpacing: "2px",
+    color: "#22c55e", textShadow: "0 1px 4px rgba(0,0,0,0.7)",
   });
-  boostEl.textContent = "BOOST READY";
-  boostEl.style.color = "#22c55e";
+  nitroLabel.textContent = "NITRO";
+
+  // Boost bar container
+  const barContainer = document.createElement("div");
+  Object.assign(barContainer.style, {
+    position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)",
+    width: "140px", height: "14px",
+    background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.2)",
+    borderRadius: "7px", overflow: "hidden",
+  });
+
+  // Boost bar fill
+  const barFill = document.createElement("div");
+  Object.assign(barFill.style, {
+    width: "100%", height: "100%",
+    background: "#22c55e",
+    borderRadius: "6px",
+    transition: "width 0.05s linear",
+  });
+  barContainer.appendChild(barFill);
 
   hud.appendChild(exitBtn);
   hud.appendChild(speedEl);
-  hud.appendChild(boostEl);
+  hud.appendChild(nitroLabel);
+  hud.appendChild(barContainer);
 
   document.body.appendChild(enterBtn);
   document.body.appendChild(hud);
@@ -85,17 +104,23 @@ export function createDrivingUI(): DrivingUI {
       enterBtn.style.display = "block";
       document.removeEventListener("keydown", onKey);
     },
-    update(speed: number, boostActive: boolean, boostCooldown: number) {
+    update(speed: number, boostActive: boolean, boostCharge: number) {
       speedEl.textContent = `${Math.round(speed)} km/h`;
+      barFill.style.width = `${Math.round(boostCharge * 100)}%`;
+
       if (boostActive) {
-        boostEl.textContent = "BOOST ACTIVE";
-        boostEl.style.color = "#f59e0b";
-      } else if (boostCooldown <= 0) {
-        boostEl.textContent = "BOOST READY";
-        boostEl.style.color = "#22c55e";
+        nitroLabel.style.color = "#f59e0b";
       } else {
-        boostEl.textContent = `BOOST [${Math.ceil(boostCooldown)}s]`;
-        boostEl.style.color = "#9ca3af";
+        nitroLabel.style.color = "#22c55e";
+      }
+
+      // Bar color: green → yellow → red
+      if (boostCharge > 0.5) {
+        barFill.style.background = "#22c55e";
+      } else if (boostCharge > 0.25) {
+        barFill.style.background = "#eab308";
+      } else {
+        barFill.style.background = "#ef4444";
       }
     },
     onEnterClick(cb: () => void) { enterCb = cb; },

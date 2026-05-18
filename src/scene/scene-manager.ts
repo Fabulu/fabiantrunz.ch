@@ -9,6 +9,7 @@ import { getMode } from '../game/game-state';
 import { enterDrivingMode } from '../game/driving-mode';
 import type { DrivingMode } from '../game/driving-mode';
 import type { PreloadedAssets } from '../game/preload';
+import type { DrivingUI } from '../components/driving-ui';
 
 // Responsive layout positions
 const DESKTOP_POSITIONS: [number, number, number][] = [
@@ -105,7 +106,7 @@ function applyLayout(
 export interface SceneAPI {
   onThemeChange(theme: 'light' | 'dark'): void;
   onLangChange(): void;
-  enterDriving(assets: PreloadedAssets): Promise<void>;
+  enterDriving(assets: PreloadedAssets, ui: DrivingUI): Promise<void>;
   exitDriving(): void;
   dispose(): void;
 }
@@ -249,11 +250,11 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
       updatePanelTextures(panels, getCurrentTheme() === 'light' ? 'light' : 'dark');
     },
 
-    async enterDriving(assets: PreloadedAssets) {
+    async enterDriving(assets: PreloadedAssets, ui: DrivingUI) {
       interaction.setEnabled(false);
       drivingMode = await enterDrivingMode(
         scene, camera, renderer, panels, lightingRig, assets,
-        exitDrivingFn,
+        exitDrivingFn, ui,
       );
     },
 

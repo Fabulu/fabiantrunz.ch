@@ -59,7 +59,7 @@ async function main(): Promise<void> {
   drivingUI.onEnterClick(async () => {
     const assets = await assetsPromise;
     if (assets && sceneApi) {
-      await sceneApi.enterDriving(assets);
+      await sceneApi.enterDriving(assets, drivingUI);
     }
   });
   drivingUI.onExitClick(() => {

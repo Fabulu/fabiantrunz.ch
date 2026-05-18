@@ -1,10 +1,12 @@
-export function createDrivingUI(): {
+export interface DrivingUI {
   mount(): void;
   unmount(): void;
   update(speed: number, boostActive: boolean, boostCooldown: number): void;
   onEnterClick(cb: () => void): void;
   onExitClick(cb: () => void): void;
-} {
+}
+
+export function createDrivingUI(): DrivingUI {
   let enterCb: (() => void) | null = null;
   let exitCb: (() => void) | null = null;
 

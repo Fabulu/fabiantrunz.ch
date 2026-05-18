@@ -17,7 +17,7 @@ import { createZoneProps } from './buildings/zone-props';
 import { createProximitySystem } from './buildings/proximity';
 import { createBoxWalls, animateBoxOpen } from './transition/box-walls';
 import { scatterPanels, tickScatter, resetPanels } from './transition/panel-scatter';
-import { createDrivingUI } from '../components/driving-ui';
+import type { DrivingUI } from '../components/driving-ui';
 import type { InputState } from './types';
 import { createAudioManager } from './audio/audio-manager';
 import { CONFIG } from './types';
@@ -35,14 +35,15 @@ export async function enterDrivingMode(
   galleryLightingRig: LightingRig,
   preloadedAssets: PreloadedAssets,
   onExit: () => void,
+  ui: DrivingUI,
 ): Promise<DrivingMode> {
   setMode('transitioning');
 
   // UI
-  const ui = createDrivingUI();
   ui.onExitClick(onExit);
 
-  const audio = await createAudioManager();
+  const audio = createAudioManager(preloadedAssets.audioBuffers);
+  await audio.ensureReady();
 
   // Box transition
   const walls = createBoxWalls(scene);

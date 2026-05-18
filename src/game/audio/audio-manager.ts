@@ -1,4 +1,5 @@
 export interface AudioManager {
+  ensureReady(): Promise<void>;
   playMusic(): Promise<void>;
   stopMusic(): void;
   playEffect(name: 'boost' | 'jump' | 'land' | 'rock-hit' | 'box-open'): void;
@@ -11,7 +12,7 @@ export interface AudioManager {
   dispose(): void;
 }
 
-const AUDIO_FILES: Record<string, string> = {
+export const AUDIO_FILES: Record<string, string> = {
   'music': '/audio/music-driving.mp3',
   'engine': '/audio/engine-loop.mp3',
   'boost': '/audio/boost.mp3',
@@ -21,10 +22,8 @@ const AUDIO_FILES: Record<string, string> = {
   'box-open': '/audio/box-open.mp3',
 };
 
-export async function createAudioManager(): Promise<AudioManager> {
+export async function fetchAudioBuffers(): Promise<Map<string, ArrayBuffer>> {
   const rawBuffers = new Map<string, ArrayBuffer>();
-  const audioBuffers = new Map<string, AudioBuffer>();
-
   const entries = Object.entries(AUDIO_FILES);
   const results = await Promise.all(
     entries.map(([, url]) =>
@@ -35,6 +34,11 @@ export async function createAudioManager(): Promise<AudioManager> {
     const buf = results[i];
     if (buf) rawBuffers.set(entries[i][0], buf);
   }
+  return rawBuffers;
+}
+
+export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioManager {
+  const audioBuffers = new Map<string, AudioBuffer>();
 
   let ctx: AudioContext | null = null;
   let masterGain: GainNode;
@@ -100,6 +104,9 @@ export async function createAudioManager(): Promise<AudioManager> {
   }
 
   return {
+    async ensureReady() {
+      await waitForDecode();
+    },
     async playMusic() {
       if (musicSource) return;
       await waitForDecode();

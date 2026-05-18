@@ -97,9 +97,9 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       if (wheelGroup) wheelGroup.rotation.z += velocity * dt * 3;
     }
 
-    // 12. Front wheel steering visual — applied to the pivot's Y rotation
+    // 12. Front wheel steering visual — negated because car.group.rotation.y = -heading
     for (const pivot of car.frontWheels) {
-      pivot.rotation.y = steeringAngle;
+      pivot.rotation.y = -steeringAngle;
     }
   }
 

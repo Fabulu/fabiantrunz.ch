@@ -44,15 +44,15 @@ export function createRocks(
     const radius = 0.3 + rand() * 0.7; // 0.3 to 1.0
     const y = getHeightAt(x, z) + radius;
 
-    // Create rock geometry with vertex displacement for variety
-    const indexed = new THREE.IcosahedronGeometry(radius, 2);
-    const geo = indexed.toNonIndexed();
-    indexed.dispose();
+    // Create rock geometry — indexed so shared vertices stay watertight
+    const geo = new THREE.IcosahedronGeometry(radius, 2);
     const pos = geo.getAttribute('position');
     for (let v = 0; v < pos.count; v++) {
-      pos.setX(v, pos.getX(v) + (rand() - 0.5) * radius * 0.03);
-      pos.setY(v, pos.getY(v) + (rand() - 0.5) * radius * 0.03);
-      pos.setZ(v, pos.getZ(v) + (rand() - 0.5) * radius * 0.03);
+      // Multiplicative: scale each vertex radially by 0.97-1.03
+      const scale = 1 + (rand() - 0.5) * 0.06;
+      pos.setX(v, pos.getX(v) * scale);
+      pos.setY(v, pos.getY(v) * scale);
+      pos.setZ(v, pos.getZ(v) * scale);
     }
     geo.computeVertexNormals();
 

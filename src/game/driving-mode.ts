@@ -48,55 +48,45 @@ export async function enterDrivingMode(
   const audio = createAudioManager(preloadedAssets.audioBuffers);
   await audio.ensureReady();
 
-  // Prepare driving scene behind walls
-  const walls = createBoxWalls(scene);
+  // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Terrain + sky hidden until walls open
-  preloadedAssets.terrain.visible = false;
-  scene.add(preloadedAssets.terrain);
-  scene.background = preloadedAssets.sky;
+  // Create walls around the gallery view (camera sees the front wall as the dark background)
+  const walls = createBoxWalls(scene);
 
-  // Driving lighting (added early so car is lit during reveal)
-  const drivingLights = createDrivingLighting(scene);
+  // NOTHING else added yet — keep the dark gallery look.
+  // Sky, terrain, car, driving lights all added DURING the wall open phase.
 
-  // Car (start invisible, fades in during transition)
+  // Car positioned but NOT added to scene yet
   const car = preloadedAssets.car;
-  car.group.position.set(0, getHeightAt(0, 0), 0);
-  car.bodyMaterial.transparent = true;
-  car.bodyMaterial.opacity = 0;
-  scene.add(car.group);
+  const carY = getHeightAt(0, 0);
+  car.group.position.set(0, carY, 0);
+  car.group.visible = false; // fully hidden until reveal
 
-  // Cinematic transition (~5s)
-  const carPos = car.group.position;
-
+  // ─── Cinematic transition ────────────────────────────────────────
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
-    // Phase 1 (0-1.5s): Camera pulls back and up, car fades in
-    // CRITICAL: camera must stay at Z > 0 (same side as lookAt target)
-    // to avoid 180° gimbal spin
-    master.to(camera.position, {
-      x: carPos.x - 6,
-      y: carPos.y + 7,
-      z: carPos.z + 2,
-      duration: 1.5,
-      ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
-    }, 0);
-    master.to(car.bodyMaterial, { opacity: 1, duration: 1.2 }, 0.3);
+    // Phase 1 (0-1.5s): Walls hinge open, revealing landscape behind
+    // Sound effect
+    master.call(() => audio.playEffect('box-open'), undefined, 0);
 
-    // Phase 2 (1.5-3.8s): Walls hinge open slowly, terrain revealed
     const wallTl = createWallOpenTimeline(walls);
-    master.add(wallTl, 1.5);
+    master.add(wallTl, 0.3);
 
-    // Reveal terrain + fog as walls open
+    // At 0.5s: add sky + terrain + driving lights behind the opening walls
     master.call(() => {
-      preloadedAssets.terrain.visible = true;
+      // Swap background from dark to sky
+      scene.background = preloadedAssets.sky;
+      // Add terrain (visible through gaps as walls open)
+      scene.add(preloadedAssets.terrain);
+      // Driving lighting
       scene.fog = createFog();
-    }, undefined, 2.0);
+      // Add car to scene (still hidden)
+      scene.add(car.group);
+    }, undefined, 0.5);
 
-    // Remove gallery lighting during wall open
+    // At 1.0s: remove gallery lighting, show car
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -104,30 +94,38 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 2.0);
+      car.group.visible = true;
+    }, undefined, 1.0);
 
-    // Play box-open sound when walls start moving
-    master.call(() => audio.playEffect('box-open'), undefined, 1.5);
+    // Phase 2 (1.0-3.0s): Camera pulls back and up to overhead view
+    // Stay on same Z side as gallery camera (Z > 0) to avoid gimbal spin
+    master.to(camera.position, {
+      x: 0,
+      y: carY + 6,
+      z: 6,
+      duration: 2.0,
+      ease: 'power2.inOut',
+      onUpdate: () => camera.lookAt(0, carY + 0.5, 0),
+    }, 1.0);
 
-    // Phase 3 (3.8-5.5s): Camera arcs around to behind car (chase position)
-    const behindX = carPos.x - Math.cos(0) * 8;
-    const behindZ = carPos.z - Math.sin(0) * 8;
+    // Dispose walls once fully open
+    master.call(() => walls.dispose(), undefined, 2.8);
+
+    // Phase 3 (3.0-4.5s): Camera arcs to chase position behind car
+    const behindX = -Math.cos(0) * 8; // = -8
+    const behindZ = -Math.sin(0) * 8; // = 0
     master.to(camera.position, {
       x: behindX,
-      y: carPos.y + 4,
+      y: carY + 4,
       z: behindZ,
-      duration: 1.7,
+      duration: 1.5,
       ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
-    }, 3.8);
-
-    // Dispose walls after fully open
-    master.call(() => walls.dispose(), undefined, 4.0);
+      onUpdate: () => camera.lookAt(0, carY + 1, 0),
+    }, 3.0);
   });
 
-  // Restore car material to opaque
-  car.bodyMaterial.transparent = false;
-  car.bodyMaterial.opacity = 1;
+  // Driving lighting (added after transition so it doesn't conflict with gallery lights)
+  const drivingLights = createDrivingLighting(scene);
 
   // Car physics
   const carPhysics = createCarPhysics(car);
@@ -172,6 +170,7 @@ export async function enterDrivingMode(
   let prevBoostActive = false;
   let prevAirborne = false;
   let rockHitCooldown = 0;
+  let carHasMoved = false; // don't scatter panels until car moves from spawn
 
   function tick(dt: number): void {
     // Input
@@ -180,6 +179,13 @@ export async function enterDrivingMode(
     // Car physics
     carPhysics.tick(dt, input);
     const state = carPhysics.getState();
+
+    // Track if car has moved from spawn (for panel scatter gate)
+    if (!carHasMoved) {
+      const dx = state.position.x;
+      const dz = state.position.z;
+      if (dx * dx + dz * dz > 9) carHasMoved = true; // moved 3+ units from origin
+    }
 
     // Obstacle collision resolution
     const resolved = obstacleSystem.resolve(state.position, state.velocity, state.heading);
@@ -225,8 +231,17 @@ export async function enterDrivingMode(
     // Proximity overlay
     proximity.update(state.position);
 
-    // Panels: bob until car hits them, then scatter
-    tickPanelFloat(floatState, dt, state.position);
+    // Panels: bob until car hits them (only scatter after car has moved from spawn)
+    if (carHasMoved) {
+      tickPanelFloat(floatState, dt, state.position);
+    } else {
+      // Just bob, no scatter check
+      for (const item of floatState) {
+        item.bobPhase += dt * 1.2;
+        item.panel.mesh.position.y =
+          item.panel.basePosition.y + Math.sin(item.bobPhase) * 0.02;
+      }
+    }
 
     // HUD
     ui.update(Math.abs(state.velocity), state.boostActive, state.boostCharge);

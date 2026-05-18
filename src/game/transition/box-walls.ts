@@ -12,7 +12,11 @@ export interface BoxWalls {
 
 function createWall(): { group: THREE.Group; mesh: THREE.Mesh; material: THREE.MeshBasicMaterial } {
   const geometry = new THREE.PlaneGeometry(12, 8);
-  const material = new THREE.MeshBasicMaterial({ color: 0x050508, transparent: true });
+  const material = new THREE.MeshBasicMaterial({
+    color: 0x050508,
+    transparent: false,
+    depthWrite: true,
+  });
   const mesh = new THREE.Mesh(geometry, material);
   const group = new THREE.Group();
   group.add(mesh);
@@ -92,6 +96,7 @@ export function createWallOpenTimeline(walls: BoxWalls): gsap.core.Timeline {
 
   // Top: rotate up (hinge at top) + fade
   const topMaterial = (walls.top.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
+  tl.call(() => { topMaterial.transparent = true; }, undefined, 0.3);
   tl.to(walls.top.rotation, {
     x: Math.PI / 2,
     duration: 2.0,
@@ -104,6 +109,7 @@ export function createWallOpenTimeline(walls: BoxWalls): gsap.core.Timeline {
 
   // Back: fade out
   const backMaterial = (walls.back.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
+  tl.call(() => { backMaterial.transparent = true; }, undefined, 0.2);
   tl.to(backMaterial, {
     opacity: 0,
     duration: 2.0,

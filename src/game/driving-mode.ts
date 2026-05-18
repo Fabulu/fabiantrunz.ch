@@ -97,31 +97,31 @@ export async function enterDrivingMode(
       car.group.visible = true;
     }, undefined, 1.0);
 
-    // Phase 2 (1.0-3.0s): Camera pulls back and up to overhead view
-    // Stay on same Z side as gallery camera (Z > 0) to avoid gimbal spin
+    // Phase 2 (0.5-2.5s): Camera pulls BACK and UP — watching walls open
+    // Z increases (away from walls) so the opening is visible
     master.to(camera.position, {
       x: 0,
-      y: carY + 6,
-      z: 6,
+      y: carY + 4,
+      z: 7,
       duration: 2.0,
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(0, carY + 0.5, 0),
-    }, 1.0);
+    }, 0.5);
 
     // Dispose walls once fully open
     master.call(() => walls.dispose(), undefined, 2.8);
 
-    // Phase 3 (3.0-4.5s): Camera arcs to chase position behind car
+    // Phase 3 (2.8-4.5s): Camera arcs around to chase position behind car
     const behindX = -Math.cos(0) * 8; // = -8
     const behindZ = -Math.sin(0) * 8; // = 0
     master.to(camera.position, {
       x: behindX,
       y: carY + 4,
       z: behindZ,
-      duration: 1.5,
+      duration: 1.7,
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(0, carY + 1, 0),
-    }, 3.0);
+    }, 2.8);
   });
 
   // Driving lighting (added after transition so it doesn't conflict with gallery lights)

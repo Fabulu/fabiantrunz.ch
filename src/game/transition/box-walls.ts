@@ -2,128 +2,119 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 
 export interface BoxWalls {
-  front: THREE.Group;
-  left: THREE.Group;
-  right: THREE.Group;
-  top: THREE.Group;
-  back: THREE.Group;
   dispose(): void;
 }
 
-function createWall(w: number, h: number): { group: THREE.Group; mesh: THREE.Mesh; material: THREE.MeshBasicMaterial } {
-  const geometry = new THREE.PlaneGeometry(w, h);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0x050508,
-    transparent: false,
-    depthWrite: true,
-    side: THREE.DoubleSide,
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  const group = new THREE.Group();
-  group.add(mesh);
-  return { group, mesh, material };
-}
-
 /**
- * Box encloses gallery camera (0, 0.3, 4.5) and panels (around origin).
- * Doubled size: X=-14..+14, Y=-8..+10, Z=-6..+12
+ * Simple dark box enclosing the gallery.
+ * Camera at (0, 0.3, 4.5), panels at X=-3..+3, Y≈0..1, Z≈0.
+ * Box: X=-8..+8, Y=-1..+6, Z=-5..+7
+ * Each wall is a simple plane at a box face. No hinge offsets.
+ * Animation: walls fall straight down (translate Y).
  */
 export function createBoxWalls(scene: THREE.Scene): BoxWalls {
-  // Back wall: behind panels (Z=-6)
-  const back = createWall(28, 18);
-  back.group.position.set(0, 1, -6);
+  const mat = () => new THREE.MeshBasicMaterial({
+    color: 0x050508,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+  });
 
-  // Left wall: hinge at OUTER edge (X=-14), falls outward (away from car)
-  // Pivot at X=-14, mesh offset inward by +14 so the face spans X=-14..+14
-  const left = createWall(18, 18);
-  left.group.position.set(-14, 1, 3);
-  left.group.rotation.y = Math.PI / 2;
-  left.mesh.position.x = 9;
+  const walls: THREE.Mesh[] = [];
 
-  // Right wall: hinge at OUTER edge (X=+14), falls outward
-  const right = createWall(18, 18);
-  right.group.position.set(14, 1, 3);
-  right.group.rotation.y = -Math.PI / 2;
-  right.mesh.position.x = -9;
+  // Left wall (X=-8, vertical, facing +X)
+  const leftGeo = new THREE.PlaneGeometry(12, 7);
+  const left = new THREE.Mesh(leftGeo, mat());
+  left.position.set(-8, 2.5, 1);
+  left.rotation.y = Math.PI / 2;
+  walls.push(left);
 
-  // Top: hinge at back edge (Y=+10)
-  const top = createWall(28, 18);
-  top.group.position.set(0, 10, 3);
-  top.group.rotation.x = Math.PI / 2;
-  top.mesh.position.y = -9;
+  // Right wall (X=+8, vertical, facing -X)
+  const rightGeo = new THREE.PlaneGeometry(12, 7);
+  const right = new THREE.Mesh(rightGeo, mat());
+  right.position.set(8, 2.5, 1);
+  right.rotation.y = -Math.PI / 2;
+  walls.push(right);
 
-  // Front: behind the camera (Z=+12)
-  const front = createWall(28, 18);
-  front.group.position.set(0, 1, 12);
-  front.group.rotation.y = Math.PI;
+  // Back wall (Z=-5, vertical, facing +Z)
+  const backGeo = new THREE.PlaneGeometry(16, 7);
+  const back = new THREE.Mesh(backGeo, mat());
+  back.position.set(0, 2.5, -5);
+  walls.push(back);
 
-  // Floor: black ground inside the box
-  const floor = createWall(28, 18);
-  floor.group.position.set(0, -0.01, 3);
-  floor.group.rotation.x = -Math.PI / 2;
+  // Front wall (Z=+7, behind camera, facing -Z)
+  const frontGeo = new THREE.PlaneGeometry(16, 7);
+  const front = new THREE.Mesh(frontGeo, mat());
+  front.position.set(0, 2.5, 7);
+  front.rotation.y = Math.PI;
+  walls.push(front);
 
-  scene.add(back.group, left.group, right.group, top.group, front.group, floor.group);
+  // Top (Y=+6, horizontal, facing down)
+  const topGeo = new THREE.PlaneGeometry(16, 12);
+  const top = new THREE.Mesh(topGeo, mat());
+  top.position.set(0, 6, 1);
+  top.rotation.x = Math.PI / 2;
+  walls.push(top);
+
+  // Floor (Y=0.05, horizontal, just above terrain)
+  const floorGeo = new THREE.PlaneGeometry(16, 12);
+  const floor = new THREE.Mesh(floorGeo, mat());
+  floor.position.set(0, 0.05, 1);
+  floor.rotation.x = -Math.PI / 2;
+  walls.push(floor);
+
+  for (const w of walls) scene.add(w);
 
   function dispose() {
-    const all = [front, left, right, top, back, floor];
-    for (const wall of all) {
-      scene.remove(wall.group);
-      wall.mesh.geometry.dispose();
-      wall.material.dispose();
+    for (const w of walls) {
+      scene.remove(w);
+      w.geometry.dispose();
+      (w.material as THREE.Material).dispose();
     }
   }
 
-  return {
-    front: front.group,
-    left: left.group,
-    right: right.group,
-    top: top.group,
-    back: back.group,
-    dispose,
-  };
+  return { dispose };
 }
 
-/** Walls DROP open and stay visible on the ground. No fading. */
-export function createWallOpenTimeline(walls: BoxWalls): gsap.core.Timeline {
+/**
+ * Walls fall away from center: left slides left, right slides right,
+ * top flies up, back slides back, front fades, floor stays then fades.
+ * Simple translations — no complex hinge math.
+ */
+export function createWallOpenTimeline(_box: BoxWalls, scene: THREE.Scene): gsap.core.Timeline {
   const tl = gsap.timeline();
 
-  // Left: falls OUTWARD (to the left, away from center)
-  // Currently at rotation.y = PI/2. Falling outward = rotating to 0 (flat on ground facing left)
-  tl.to(walls.left.rotation, {
-    y: 0,
-    duration: 3.0,
-    ease: 'bounce.out',
-  }, 0);
+  // Find wall meshes by position (they were added to scene)
+  const meshes = scene.children.filter(
+    c => c instanceof THREE.Mesh && (c.material as THREE.MeshBasicMaterial).color?.getHex() === 0x050508
+  ) as THREE.Mesh[];
 
-  // Right: falls OUTWARD (to the right, away from center)
-  // Currently at rotation.y = -PI/2. Falling outward = rotating to 0
-  tl.to(walls.right.rotation, {
-    y: 0,
-    duration: 3.0,
-    ease: 'bounce.out',
-  }, 0.1);
+  for (const m of meshes) {
+    const pos = m.position;
 
-  // Top: falls backward (away from camera)
-  tl.to(walls.top.rotation, {
-    x: 0,
-    duration: 2.5,
-    ease: 'bounce.out',
-  }, 0.2);
-
-  // Back: falls backward (hinge at bottom, drops away)
-  tl.to(walls.back.rotation, {
-    x: -Math.PI / 2,
-    duration: 2.8,
-    ease: 'bounce.out',
-  }, 0.3);
-
-  // Front (behind camera): just disappear quickly
-  const frontMaterial = (walls.front.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
-  tl.call(() => { frontMaterial.transparent = true; }, undefined, 0);
-  tl.to(frontMaterial, {
-    opacity: 0,
-    duration: 0.5,
-  }, 0);
+    if (pos.x < -5) {
+      // Left wall → slide left and down
+      tl.to(pos, { x: pos.x - 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0);
+    } else if (pos.x > 5) {
+      // Right wall → slide right and down
+      tl.to(pos, { x: pos.x + 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0.1);
+    } else if (pos.z < -3) {
+      // Back wall → slide back and down
+      tl.to(pos, { z: pos.z - 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0.2);
+    } else if (pos.z > 6) {
+      // Front wall → fade out quickly
+      const frontMat = m.material as THREE.MeshBasicMaterial;
+      frontMat.transparent = true;
+      tl.to(frontMat, { opacity: 0, duration: 0.5 }, 0);
+    } else if (pos.y > 5) {
+      // Top → fly up
+      tl.to(pos, { y: pos.y + 15, duration: 2.0, ease: 'power2.in' }, 0.15);
+    } else if (pos.y < 0.1) {
+      // Floor → fade out after walls are gone
+      const floorMat = m.material as THREE.MeshBasicMaterial;
+      floorMat.transparent = true;
+      tl.to(floorMat, { opacity: 0, duration: 1.0 }, 2.0);
+    }
+  }
 
   return tl;
 }

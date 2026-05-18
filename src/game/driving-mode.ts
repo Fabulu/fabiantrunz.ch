@@ -51,20 +51,23 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Lift ALL panels above ground so they don't clip into terrain
+  // Lift ALL panels well above ground (radius=0.6, need Y >= 1.0 for bottom edge above 0)
   for (const item of floatState) {
-    item.panel.mesh.position.y = Math.max(item.panel.mesh.position.y, 0.5);
+    const liftedY = Math.max(item.panel.basePosition.y, 1.0);
+    item.panel.mesh.position.y = liftedY;
+    // Update basePosition so bob code doesn't reset it
+    item.panel.basePosition.y = liftedY;
   }
 
-  // Car spawns BEHIND the panels (pulled back), facing camera (+Z)
+  // Car spawns well BEHIND the panels, facing camera (+Z)
   const carY = getHeightAt(0, 0); // ≈ 0
   const car = preloadedAssets.car;
-  car.group.position.set(0, carY, -2.5); // behind the panel arc
+  car.group.position.set(0, carY, -4); // well behind panel arc
   car.group.rotation.y = Math.PI / 2; // face +Z (toward camera)
   car.group.visible = true;
   scene.add(car.group);
 
-  // Create walls that SURROUND the camera and panels (doubled size)
+  // Create box enclosure
   const walls = createBoxWalls(scene);
 
   // Driving lights EARLY so terrain isn't black
@@ -77,11 +80,11 @@ export async function enterDrivingMode(
     // Sound
     master.call(() => audio.playEffect('box-open'), undefined, 0.3);
 
-    // Walls DROP open starting at 0.3s (bounce, stay on ground)
-    const wallTl = createWallOpenTimeline(walls);
+    // Walls slide/fly away starting at 0.3s
+    const wallTl = createWallOpenTimeline(walls, scene);
     master.add(wallTl, 0.3);
 
-    // At 0.8s: sky + terrain appear through gaps
+    // At 0.8s: sky + terrain appear
     master.call(() => {
       scene.background = preloadedAssets.sky;
       scene.add(preloadedAssets.terrain);
@@ -98,40 +101,33 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.cursorLight);
     }, undefined, 1.0);
 
-    // Camera stays inside box during reveal — gentle lift only
-    // Gallery cam: (0, 0.3, 4.5)
+    // Camera: gentle lift during wall reveal
     master.to(camera.position, {
       y: 1.5,
       z: 5.5,
       duration: 3.0,
       ease: 'power1.inOut',
-      onUpdate: () => camera.lookAt(0, 0.5, 0),
+      onUpdate: () => camera.lookAt(0, 0.8, 0),
     }, 0.3);
 
-    // Dispose walls at 4s (they stay visible as fallen walls for a while)
+    // Dispose wall meshes after they've fallen away
     master.call(() => walls.dispose(), undefined, 6.0);
 
-    // Phase 2 (3.5-5.5s): Camera arcs around to behind car
-    // Car also rotates from facing camera (+Z) to facing +X (heading=0)
-    // Arc: camera goes from (0, 1.5, 5.5) around to (-8, 4, 0)
+    // Phase 2 (3.5-5.5s): Camera arcs to behind car, car rotates
     const arcObj = { t: 0 };
-    const startR = 5.5; // current distance from origin in XZ
-    const endR = 8;     // chase cam distance
-    const startAngle = Math.PI / 2; // camera at +Z
-    const endAngle = Math.PI;       // camera at -X (behind car facing +X)
     master.to(arcObj, {
       t: 1,
       duration: 2.0,
       ease: 'power2.inOut',
       onUpdate: () => {
-        const angle = startAngle + (endAngle - startAngle) * arcObj.t;
-        const r = startR + (endR - startR) * arcObj.t;
-        const y = 1.5 + (4 - 1.5) * arcObj.t;
+        const angle = (Math.PI / 2) + (Math.PI / 2) * arcObj.t; // PI/2 → PI
+        const r = 5.5 + 2.5 * arcObj.t; // 5.5 → 8
+        const y = 1.5 + 2.5 * arcObj.t; // 1.5 → 4
         camera.position.x = Math.cos(angle) * r;
         camera.position.z = Math.sin(angle) * r;
         camera.position.y = y;
         camera.lookAt(0, 1, 0);
-        // Rotate car from facing +Z to facing +X during arc
+        // Rotate car: facing +Z → facing +X
         car.group.rotation.y = (Math.PI / 2) * (1 - arcObj.t);
       },
     }, 3.5);

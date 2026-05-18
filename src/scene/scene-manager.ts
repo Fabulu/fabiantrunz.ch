@@ -105,24 +105,30 @@ function applyLayout(
 }
 
 // ── 3D Enter Button ─────────────────────────────────────────────────
-function createButtonTexture(_theme: 'light' | 'dark'): THREE.CanvasTexture {
+function createButtonTexture(theme: 'light' | 'dark'): THREE.CanvasTexture {
   const W = 512, H = 128;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
 
-  // Rounded rect background
+  // Rounded rect background — theme-aware
   const r = 24;
   ctx.beginPath();
   ctx.roundRect(8, 8, W - 16, H - 16, r);
-  ctx.fillStyle = 'rgba(245,158,11,0.85)';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  if (theme === 'dark') {
+    ctx.fillStyle = 'rgba(40, 45, 70, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(100, 140, 220, 0.5)';
+  } else {
+    ctx.fillStyle = 'rgba(230, 235, 245, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(60, 80, 140, 0.4)';
+  }
   ctx.lineWidth = 2;
   ctx.stroke();
 
   // Text
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = theme === 'dark' ? '#c0d0f0' : '#2a3a6a';
   ctx.font = 'bold 42px Inter, system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

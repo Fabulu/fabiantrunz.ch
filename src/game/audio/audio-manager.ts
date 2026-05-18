@@ -62,10 +62,10 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     masterGain.gain.value = muted ? 0 : volume;
     masterGain.connect(ctx.destination);
     musicGain = ctx.createGain();
-    musicGain.gain.value = 0.3;
+    musicGain.gain.value = 0.6;
     musicGain.connect(masterGain);
     engineGain = ctx.createGain();
-    engineGain.gain.value = 0.35;
+    engineGain.gain.value = 0.15;
     engineGain.connect(masterGain);
     boostGain = ctx.createGain();
     boostGain.gain.value = 0.4;
@@ -117,7 +117,7 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     async playMusic() {
       if (musicSource) return;
       await waitForDecode();
-      musicGain.gain.value = 0.3;
+      musicGain.gain.value = 0.6;
       musicSource = playBuffer('music', musicGain, true);
     },
     stopMusic() {
@@ -127,7 +127,7 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     async startEngine() {
       if (engineSource) return;
       await waitForDecode();
-      engineGain.gain.value = 0.35;
+      engineGain.gain.value = 0.15;
       engineSource = playBuffer('engine', engineGain, true);
     },
     stopEngine() {

@@ -26,7 +26,7 @@ function height(x: number, z: number): number {
   let h = 0;
 
   // Hilltop: flat-topped plateau
-  h += Math.min(8, 10 * Math.exp(-(x * x + z * z) / 500));
+  h += Math.min(1.5, 2 * Math.exp(-(x * x + z * z) / 500));
 
   // Mountain peaks (east): 4 narrow gaussians
   const peaks = [

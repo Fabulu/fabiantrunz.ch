@@ -52,10 +52,10 @@ export async function enterDrivingMode(
   const walls = createBoxWalls(scene);
   const floatState = createPanelFloat(panels);
 
-  // Add terrain + sky behind walls (invisible until walls open)
+  // Terrain + sky hidden until walls open
+  preloadedAssets.terrain.visible = false;
   scene.add(preloadedAssets.terrain);
   scene.background = preloadedAssets.sky;
-  scene.fog = createFog();
 
   // Driving lighting (added early so car is lit during reveal)
   const drivingLights = createDrivingLighting(scene);
@@ -73,20 +73,28 @@ export async function enterDrivingMode(
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
-    // Phase 1 (0-1.2s): Camera pulls back, car fades in
+    // Phase 1 (0-1.5s): Camera pulls back and up, car fades in
+    // CRITICAL: camera must stay at Z > 0 (same side as lookAt target)
+    // to avoid 180° gimbal spin
     master.to(camera.position, {
-      x: carPos.x - 8,
-      y: carPos.y + 6,
-      z: carPos.z - 8,
-      duration: 1.2,
+      x: carPos.x - 6,
+      y: carPos.y + 7,
+      z: carPos.z + 2,
+      duration: 1.5,
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
     }, 0);
-    master.to(car.bodyMaterial, { opacity: 1, duration: 1.0 }, 0.2);
+    master.to(car.bodyMaterial, { opacity: 1, duration: 1.2 }, 0.3);
 
-    // Phase 2 (1.2-3.5s): Walls hinge open slowly
+    // Phase 2 (1.5-3.8s): Walls hinge open slowly, terrain revealed
     const wallTl = createWallOpenTimeline(walls);
-    master.add(wallTl, 1.2);
+    master.add(wallTl, 1.5);
+
+    // Reveal terrain + fog as walls open
+    master.call(() => {
+      preloadedAssets.terrain.visible = true;
+      scene.fog = createFog();
+    }, undefined, 2.0);
 
     // Remove gallery lighting during wall open
     master.call(() => {
@@ -96,25 +104,25 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 1.5);
+    }, undefined, 2.0);
 
-    // Phase 3 (3.5-5s): Camera settles behind car
+    // Play box-open sound when walls start moving
+    master.call(() => audio.playEffect('box-open'), undefined, 1.5);
+
+    // Phase 3 (3.8-5.5s): Camera arcs around to behind car (chase position)
     const behindX = carPos.x - Math.cos(0) * 8;
     const behindZ = carPos.z - Math.sin(0) * 8;
     master.to(camera.position, {
       x: behindX,
       y: carPos.y + 4,
       z: behindZ,
-      duration: 1.5,
-      ease: 'power2.out',
+      duration: 1.7,
+      ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
-    }, 3.5);
-
-    // Play box-open sound when walls start moving
-    master.call(() => audio.playEffect('box-open'), undefined, 1.2);
+    }, 3.8);
 
     // Dispose walls after fully open
-    master.call(() => walls.dispose(), undefined, 3.8);
+    master.call(() => walls.dispose(), undefined, 4.0);
   });
 
   // Restore car material to opaque

@@ -8,14 +8,12 @@ import { createDrivingLighting, type DrivingLightRig } from '../driving-lighting
 // ─── getHeightAt (pure math, no DOM needed) ─────────────────────────────────
 
 describe('getHeightAt', () => {
-  it('should be approximately 8 at hill peak (0, 0)', () => {
+  it('should be approximately 1.5 at hill peak (0, 0)', () => {
     const h = getHeightAt(0, 0);
-    // Hill gaussian peaks at 8, noise adds ±~1.6 max at origin
-    // At (0,0): noise = 0.8*sin(0)*cos(0) + 0.5*sin(0) + 0.3*cos(0) = 0 + 0 + 0.3 = 0.3
-    // So actual value is ~8.3, allow ±1 tolerance
+    // Hill gaussian peaks at 1.5 (Math.min(1.5, 2*exp(0))), noise ≈ 0 at origin
     assert.ok(
-      Math.abs(h - 8) <= 1,
-      `Expected height near 8 (±1), got ${h}`
+      Math.abs(h - 1.5) <= 1,
+      `Expected height near 1.5 (±1), got ${h}`
     );
   });
 

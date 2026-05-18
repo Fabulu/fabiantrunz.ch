@@ -45,7 +45,7 @@ export function createRocks(
     const y = getHeightAt(x, z) + radius;
 
     // Create rock geometry with vertex displacement for variety
-    const indexed = new THREE.IcosahedronGeometry(radius, 1);
+    const indexed = new THREE.IcosahedronGeometry(radius, 2);
     const geo = indexed.toNonIndexed();
     indexed.dispose();
     const pos = geo.getAttribute('position');

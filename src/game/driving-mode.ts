@@ -51,8 +51,9 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Lift ALL panels well above ground (radius=0.6, need Y >= 1.0 for bottom edge above 0)
-  // Save original Y values for restore on exit
+  // Lift panels above floor (Y=0.3) + terrain. Panels have radius 0.6,
+  // so Y >= 1.0 puts bottom edge at Y=0.4 (above floor).
+  // Save original Y for restore on exit.
   const originalPanelY: number[] = [];
   for (const item of floatState) {
     originalPanelY.push(item.panel.basePosition.y);
@@ -61,39 +62,56 @@ export async function enterDrivingMode(
     item.panel.basePosition.y = liftedY;
   }
 
-  // Car spawns well BEHIND the panels, facing camera (+Z)
-  const carY = getHeightAt(0, 0); // ≈ 0
+  // Car spawns IN FRONT of panels (between camera and panels), facing +X
+  // Camera at Z=4.5, car at Z=2, panels at Z≈0
+  const carY = getHeightAt(0, 2); // terrain height at car spawn
   const car = preloadedAssets.car;
-  car.group.position.set(0, carY, -4); // well behind panel arc
-  car.group.rotation.y = Math.PI / 2; // face +Z (toward camera)
+  car.group.position.set(0, Math.max(carY, 0.3), 2); // above floor
+  car.group.rotation.y = 0; // facing +X from the start
   car.group.visible = true;
   scene.add(car.group);
 
-  // Create box enclosure
+  // Box enclosure
   const walls = createBoxWalls(scene);
 
-  // Driving lights EARLY so terrain isn't black
+  // Driving lights early so terrain isn't black
   const drivingLights = createDrivingLighting(scene);
 
   // ─── Cinematic transition ────────────────────────────────────────
+  // Phase 1: Camera pulls BACK (Z increases) to reveal car in front of panels
+  // Phase 2: Walls slide away slowly (4-5s)
+  // Phase 3: Camera arcs to chase position behind car
+  const carPos = car.group.position;
+
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
     // Sound
     master.call(() => audio.playEffect('box-open'), undefined, 0.3);
 
-    // Walls slide/fly away starting at 0.3s
+    // Walls slide away slowly (starts at 0.5s, takes 4.5s)
     const wallTl = createWallOpenTimeline(walls, scene);
-    master.add(wallTl, 0.3);
+    master.add(wallTl, 0.5);
 
-    // At 0.8s: sky + terrain appear
+    // Phase 1 (0-2.5s): Camera pulls BACK to reveal car + scene
+    // From gallery (0, 0.3, 4.5) to (0, 2.5, 8)
+    master.to(camera.position, {
+      x: 0,
+      y: 2.5,
+      z: 8,
+      duration: 2.5,
+      ease: 'power1.inOut',
+      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 0.5, carPos.z),
+    }, 0);
+
+    // At 1.5s: sky + terrain appear through widening gaps
     master.call(() => {
       scene.background = preloadedAssets.sky;
       scene.add(preloadedAssets.terrain);
       scene.fog = createFog();
-    }, undefined, 0.8);
+    }, undefined, 1.5);
 
-    // At 1.0s: swap lighting
+    // At 2.0s: swap lighting
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -101,45 +119,43 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 1.0);
+    }, undefined, 2.0);
 
-    // Camera: gentle lift during wall reveal
-    master.to(camera.position, {
-      y: 1.5,
-      z: 5.5,
-      duration: 3.0,
-      ease: 'power1.inOut',
-      onUpdate: () => camera.lookAt(0, 0.8, 0),
-    }, 0.3);
-
-    // Dispose wall meshes after they've fallen away
-    master.call(() => walls.dispose(), undefined, 6.0);
-
-    // Phase 2 (3.5-5.5s): Camera arcs to behind car, car rotates
+    // Phase 3 (4.0-6.0s): Camera arcs to chase position
+    // From (0, 2.5, 8) arc to (-8, carY+4, 2) — behind car facing +X
+    // Car at (0, carY, 2). Chase cam at heading=0: (car.x-8, car.y+4, car.z)
     const arcObj = { t: 0 };
+    const startZ = 8;
+    const endChaseX = carPos.x - 8; // -8
+    const endChaseZ = carPos.z;     // 2
+    const endChaseY = carPos.y + 4;
     master.to(arcObj, {
       t: 1,
       duration: 2.0,
       ease: 'power2.inOut',
       onUpdate: () => {
-        const angle = (Math.PI / 2) + (Math.PI / 2) * arcObj.t; // PI/2 → PI
-        const r = 5.5 + 2.5 * arcObj.t; // 5.5 → 8
-        const y = 1.5 + 2.5 * arcObj.t; // 1.5 → 4
-        camera.position.x = Math.cos(angle) * r;
-        camera.position.z = Math.sin(angle) * r;
-        camera.position.y = y;
-        camera.lookAt(0, 1, 0);
-        // Rotate car: facing +Z → facing +X
-        car.group.rotation.y = (Math.PI / 2) * (1 - arcObj.t);
+        // Arc from behind (+Z) to left (-X) of car
+        const relStartZ = startZ - carPos.z; // 6
+        const relEndX = endChaseX - carPos.x; // -8
+        const relEndZ = endChaseZ - carPos.z; // 0
+        const startAngle = Math.atan2(relStartZ, 0); // PI/2
+        const endAngle = Math.atan2(relEndZ, relEndX); // PI
+        const angle = startAngle + (endAngle - startAngle) * arcObj.t;
+        const startR = Math.sqrt(0 + relStartZ * relStartZ); // 6
+        const endR = Math.sqrt(relEndX * relEndX + relEndZ * relEndZ); // 8
+        const r = startR + (endR - startR) * arcObj.t;
+        camera.position.x = carPos.x + Math.cos(angle) * r;
+        camera.position.z = carPos.z + Math.sin(angle) * r;
+        camera.position.y = 2.5 + (endChaseY - 2.5) * arcObj.t;
+        camera.lookAt(carPos.x, carPos.y + 1, carPos.z);
       },
-    }, 3.5);
+    }, 4.0);
+
+    // Dispose walls well after they've slid away
+    master.call(() => walls.dispose(), undefined, 8.0);
   });
 
-  // Reset car to origin facing +X for driving
-  car.group.position.set(0, carY, 0);
-  car.group.rotation.y = 0;
-
-  // Car physics
+  // Car physics — inits from car.group.position (no teleport)
   const carPhysics = createCarPhysics(car);
 
   // Boost exhaust particles

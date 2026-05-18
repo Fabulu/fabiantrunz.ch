@@ -6,11 +6,10 @@ export interface BoxWalls {
 }
 
 /**
- * Simple dark box enclosing the gallery.
- * Camera at (0, 0.3, 4.5), panels at X=-3..+3, Y≈0..1, Z≈0.
- * Box: X=-8..+8, Y=-1..+6, Z=-5..+7
- * Each wall is a simple plane at a box face. No hinge offsets.
- * Animation: walls fall straight down (translate Y).
+ * Dark box enclosing the gallery.
+ * Camera at (0, 0.3, 4.5), car at (0, 0, 2), panels at X=-3..+3, Z≈0.
+ * Box: X=-10..+10, Y=-1..+7, Z=-6..+10
+ * Floor at Y=0.3 (above all terrain noise).
  */
 export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   const mat = () => new THREE.MeshBasicMaterial({
@@ -19,56 +18,50 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
     depthWrite: true,
   });
 
-  const walls: THREE.Mesh[] = [];
+  const meshes: THREE.Mesh[] = [];
 
-  // Left wall (X=-8, vertical, facing +X)
-  const leftGeo = new THREE.PlaneGeometry(12, 7);
-  const left = new THREE.Mesh(leftGeo, mat());
-  left.position.set(-8, 2.5, 1);
+  // Left wall (X=-10)
+  const left = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), mat());
+  left.position.set(-10, 3, 2);
   left.rotation.y = Math.PI / 2;
-  walls.push(left);
+  meshes.push(left);
 
-  // Right wall (X=+8, vertical, facing -X)
-  const rightGeo = new THREE.PlaneGeometry(12, 7);
-  const right = new THREE.Mesh(rightGeo, mat());
-  right.position.set(8, 2.5, 1);
+  // Right wall (X=+10)
+  const right = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), mat());
+  right.position.set(10, 3, 2);
   right.rotation.y = -Math.PI / 2;
-  walls.push(right);
+  meshes.push(right);
 
-  // Back wall (Z=-5, vertical, facing +Z)
-  const backGeo = new THREE.PlaneGeometry(16, 7);
-  const back = new THREE.Mesh(backGeo, mat());
-  back.position.set(0, 2.5, -5);
-  walls.push(back);
+  // Back wall (Z=-6)
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), mat());
+  back.position.set(0, 3, -6);
+  meshes.push(back);
 
-  // Front wall (Z=+7, behind camera, facing -Z)
-  const frontGeo = new THREE.PlaneGeometry(16, 7);
-  const front = new THREE.Mesh(frontGeo, mat());
-  front.position.set(0, 2.5, 7);
+  // Front wall (Z=+10, behind camera)
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(20, 8), mat());
+  front.position.set(0, 3, 10);
   front.rotation.y = Math.PI;
-  walls.push(front);
+  meshes.push(front);
 
-  // Top (Y=+6, horizontal, facing down)
-  const topGeo = new THREE.PlaneGeometry(16, 12);
-  const top = new THREE.Mesh(topGeo, mat());
-  top.position.set(0, 6, 1);
+  // Top (Y=7)
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(20, 16), mat());
+  top.position.set(0, 7, 2);
   top.rotation.x = Math.PI / 2;
-  walls.push(top);
+  meshes.push(top);
 
-  // Floor (Y=0.05, horizontal, just above terrain)
-  const floorGeo = new THREE.PlaneGeometry(16, 12);
-  const floor = new THREE.Mesh(floorGeo, mat());
-  floor.position.set(0, 0.05, 1);
+  // Floor (Y=0.3, above terrain noise which peaks at ~0.12)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(24, 20), mat());
+  floor.position.set(0, 0.3, 2);
   floor.rotation.x = -Math.PI / 2;
-  walls.push(floor);
+  meshes.push(floor);
 
-  for (const w of walls) scene.add(w);
+  for (const m of meshes) scene.add(m);
 
   function dispose() {
-    for (const w of walls) {
-      scene.remove(w);
-      w.geometry.dispose();
-      (w.material as THREE.Material).dispose();
+    for (const m of meshes) {
+      scene.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
     }
   }
 
@@ -76,43 +69,44 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 }
 
 /**
- * Walls fall away from center: left slides left, right slides right,
- * top flies up, back slides back, front fades, floor stays then fades.
- * Simple translations — no complex hinge math.
+ * Walls slide outward SLOWLY (4-5s) and stay visible.
+ * Left/right slide outward, top flies up, back slides back.
+ * Front fades (behind camera). Floor fades last.
  */
 export function createWallOpenTimeline(_box: BoxWalls, scene: THREE.Scene): gsap.core.Timeline {
   const tl = gsap.timeline();
 
-  // Find wall meshes by position (they were added to scene)
-  const meshes = scene.children.filter(
-    c => c instanceof THREE.Mesh && (c.material as THREE.MeshBasicMaterial).color?.getHex() === 0x050508
+  // Find dark wall meshes in scene
+  const darkMeshes = scene.children.filter(
+    c => c instanceof THREE.Mesh &&
+      (c.material as THREE.MeshBasicMaterial).color?.getHex() === 0x050508
   ) as THREE.Mesh[];
 
-  for (const m of meshes) {
-    const pos = m.position;
+  for (const m of darkMeshes) {
+    const p = m.position;
 
-    if (pos.x < -5) {
-      // Left wall → slide left and down
-      tl.to(pos, { x: pos.x - 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0);
-    } else if (pos.x > 5) {
-      // Right wall → slide right and down
-      tl.to(pos, { x: pos.x + 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0.1);
-    } else if (pos.z < -3) {
-      // Back wall → slide back and down
-      tl.to(pos, { z: pos.z - 12, y: -8, duration: 2.5, ease: 'power2.in' }, 0.2);
-    } else if (pos.z > 6) {
-      // Front wall → fade out quickly
-      const frontMat = m.material as THREE.MeshBasicMaterial;
-      frontMat.transparent = true;
-      tl.to(frontMat, { opacity: 0, duration: 0.5 }, 0);
-    } else if (pos.y > 5) {
-      // Top → fly up
-      tl.to(pos, { y: pos.y + 15, duration: 2.0, ease: 'power2.in' }, 0.15);
-    } else if (pos.y < 0.1) {
-      // Floor → fade out after walls are gone
-      const floorMat = m.material as THREE.MeshBasicMaterial;
-      floorMat.transparent = true;
-      tl.to(floorMat, { opacity: 0, duration: 1.0 }, 2.0);
+    if (p.x < -8) {
+      // Left → slide left slowly
+      tl.to(p, { x: p.x - 15, duration: 4.5, ease: 'power1.in' }, 0);
+    } else if (p.x > 8) {
+      // Right → slide right slowly
+      tl.to(p, { x: p.x + 15, duration: 4.5, ease: 'power1.in' }, 0.1);
+    } else if (p.z < -4) {
+      // Back → slide back slowly
+      tl.to(p, { z: p.z - 15, duration: 4.5, ease: 'power1.in' }, 0.2);
+    } else if (p.z > 8) {
+      // Front (behind camera) → fade quickly
+      const fm = m.material as THREE.MeshBasicMaterial;
+      fm.transparent = true;
+      tl.to(fm, { opacity: 0, duration: 0.8 }, 0);
+    } else if (p.y > 6) {
+      // Top → fly up slowly
+      tl.to(p, { y: p.y + 20, duration: 4.0, ease: 'power1.in' }, 0.15);
+    } else if (p.y < 1) {
+      // Floor → fade out after walls gone
+      const flm = m.material as THREE.MeshBasicMaterial;
+      flm.transparent = true;
+      tl.to(flm, { opacity: 0, duration: 1.5 }, 3.5);
     }
   }
 

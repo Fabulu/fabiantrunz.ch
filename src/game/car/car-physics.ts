@@ -1,4 +1,3 @@
-import { Vector3 } from 'three';
 import type { InputState, CarObject, CarPhysicsState } from '../types';
 import { CONFIG } from '../types';
 import { getHeightAt } from '../environment/terrain';
@@ -11,7 +10,7 @@ export interface CarPhysicsController {
 }
 
 export function createCarPhysics(car: CarObject): CarPhysicsController {
-  const position = new Vector3();
+  const position = car.group.position.clone();
   let velocity = 0;
   let heading = 0;
   let steeringAngle = 0;

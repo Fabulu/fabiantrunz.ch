@@ -51,42 +51,45 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Create walls around the gallery view (camera sees the front wall as the dark background)
+  // Lift panels above terrain height so they don't clip into the hill
+  const carY = getHeightAt(0, 0);
+  const panelLift = Math.max(0, carY - 0.2 + 0.5); // ensure panels are above terrain
+  for (const item of floatState) {
+    item.panel.mesh.position.y += panelLift;
+  }
+
+  // Car spawns inside the box, among the panels
+  const car = preloadedAssets.car;
+  car.group.position.set(0, carY, 0);
+  car.group.visible = true; // visible from the start — it's in the box with us
+  scene.add(car.group);
+
+  // Create walls that SURROUND the camera and panels
   const walls = createBoxWalls(scene);
 
-  // NOTHING else added yet — keep the dark gallery look.
-  // Sky, terrain, car, driving lights all added DURING the wall open phase.
-
-  // Car positioned but NOT added to scene yet
-  const car = preloadedAssets.car;
-  const carY = getHeightAt(0, 0);
-  car.group.position.set(0, carY, 0);
-  car.group.visible = false; // fully hidden until reveal
-
   // ─── Cinematic transition ────────────────────────────────────────
+  // Camera STAYS at gallery position during wall reveal.
+  // Walls open around the camera/car/panels to reveal the world.
+  // Only AFTER walls are gone does camera move to chase position.
+
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
-    // Phase 1 (0-1.5s): Walls hinge open, revealing landscape behind
-    // Sound effect
-    master.call(() => audio.playEffect('box-open'), undefined, 0);
+    // Sound effect at start
+    master.call(() => audio.playEffect('box-open'), undefined, 0.3);
 
+    // Walls start opening at 0.3s
     const wallTl = createWallOpenTimeline(walls);
     master.add(wallTl, 0.3);
 
-    // At 0.5s: add sky + terrain + driving lights behind the opening walls
+    // At 0.8s: add sky + terrain behind the opening walls
     master.call(() => {
-      // Swap background from dark to sky
       scene.background = preloadedAssets.sky;
-      // Add terrain (visible through gaps as walls open)
       scene.add(preloadedAssets.terrain);
-      // Driving lighting
       scene.fog = createFog();
-      // Add car to scene (still hidden)
-      scene.add(car.group);
-    }, undefined, 0.5);
+    }, undefined, 0.8);
 
-    // At 1.0s: remove gallery lighting, show car
+    // At 1.2s: swap gallery lighting for driving lighting
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -94,34 +97,33 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-      car.group.visible = true;
-    }, undefined, 1.0);
+    }, undefined, 1.2);
 
-    // Phase 2 (0.5-2.5s): Camera pulls BACK and UP — watching walls open
-    // Z increases (away from walls) so the opening is visible
+    // Camera stays at gallery position during wall open (0-3s)
+    // Just a gentle drift upward so you see the world appearing
     master.to(camera.position, {
       x: 0,
-      y: carY + 4,
-      z: 7,
-      duration: 2.0,
+      y: 1.5,
+      z: 5.0,
+      duration: 2.5,
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(0, carY + 0.5, 0),
     }, 0.5);
 
     // Dispose walls once fully open
-    master.call(() => walls.dispose(), undefined, 2.8);
+    master.call(() => walls.dispose(), undefined, 3.0);
 
-    // Phase 3 (2.8-4.5s): Camera arcs around to chase position behind car
+    // Phase 2 (3.0-4.8s): Camera arcs to chase position behind car
     const behindX = -Math.cos(0) * 8; // = -8
     const behindZ = -Math.sin(0) * 8; // = 0
     master.to(camera.position, {
       x: behindX,
       y: carY + 4,
       z: behindZ,
-      duration: 1.7,
+      duration: 1.8,
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(0, carY + 1, 0),
-    }, 2.8);
+    }, 3.0);
   });
 
   // Driving lighting (added after transition so it doesn't conflict with gallery lights)

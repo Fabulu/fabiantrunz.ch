@@ -33,13 +33,14 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   const back = createWall(28, 18);
   back.group.position.set(0, 1, -6);
 
-  // Left: hinge at left edge (X=-14)
+  // Left wall: hinge at OUTER edge (X=-14), falls outward (away from car)
+  // Pivot at X=-14, mesh offset inward by +14 so the face spans X=-14..+14
   const left = createWall(18, 18);
   left.group.position.set(-14, 1, 3);
   left.group.rotation.y = Math.PI / 2;
-  left.mesh.position.x = 9; // offset so hinge is at the edge
+  left.mesh.position.x = 9;
 
-  // Right: hinge at right edge (X=+14)
+  // Right wall: hinge at OUTER edge (X=+14), falls outward
   const right = createWall(18, 18);
   right.group.position.set(14, 1, 3);
   right.group.rotation.y = -Math.PI / 2;
@@ -56,11 +57,16 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   front.group.position.set(0, 1, 12);
   front.group.rotation.y = Math.PI;
 
-  scene.add(back.group, left.group, right.group, top.group, front.group);
+  // Floor: black ground inside the box
+  const floor = createWall(28, 18);
+  floor.group.position.set(0, -0.01, 3);
+  floor.group.rotation.x = -Math.PI / 2;
+
+  scene.add(back.group, left.group, right.group, top.group, front.group, floor.group);
 
   function dispose() {
-    const walls = [front, left, right, top, back];
-    for (const wall of walls) {
+    const all = [front, left, right, top, back, floor];
+    for (const wall of all) {
       scene.remove(wall.group);
       wall.mesh.geometry.dispose();
       wall.material.dispose();
@@ -81,30 +87,32 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 export function createWallOpenTimeline(walls: BoxWalls): gsap.core.Timeline {
   const tl = gsap.timeline();
 
-  // Left: hinge outward (falls to the left)
+  // Left: falls OUTWARD (to the left, away from center)
+  // Currently at rotation.y = PI/2. Falling outward = rotating to 0 (flat on ground facing left)
   tl.to(walls.left.rotation, {
-    y: Math.PI,
+    y: 0,
     duration: 3.0,
     ease: 'bounce.out',
   }, 0);
 
-  // Right: hinge outward (falls to the right)
+  // Right: falls OUTWARD (to the right, away from center)
+  // Currently at rotation.y = -PI/2. Falling outward = rotating to 0
   tl.to(walls.right.rotation, {
-    y: -Math.PI,
+    y: 0,
     duration: 3.0,
     ease: 'bounce.out',
   }, 0.1);
 
-  // Top: drops backward
+  // Top: falls backward (away from camera)
   tl.to(walls.top.rotation, {
-    x: Math.PI,
+    x: 0,
     duration: 2.5,
     ease: 'bounce.out',
   }, 0.2);
 
-  // Back: drops backward (hinge at bottom)
+  // Back: falls backward (hinge at bottom, drops away)
   tl.to(walls.back.rotation, {
-    x: Math.PI / 2,
+    x: -Math.PI / 2,
     duration: 2.8,
     ease: 'bounce.out',
   }, 0.3);

@@ -51,17 +51,15 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Ensure all panels are above ground (about panel is at Y=-0.85)
+  // Lift ALL panels above ground so they don't clip into terrain
   for (const item of floatState) {
-    if (item.panel.mesh.position.y < 0.1) {
-      item.panel.mesh.position.y = 0.1;
-    }
+    item.panel.mesh.position.y = Math.max(item.panel.mesh.position.y, 0.5);
   }
 
-  // Car spawns inside the box, facing the camera (+Z direction)
+  // Car spawns BEHIND the panels (pulled back), facing camera (+Z)
   const carY = getHeightAt(0, 0); // ≈ 0
   const car = preloadedAssets.car;
-  car.group.position.set(0, carY, 0);
+  car.group.position.set(0, carY, -2.5); // behind the panel arc
   car.group.rotation.y = Math.PI / 2; // face +Z (toward camera)
   car.group.visible = true;
   scene.add(car.group);
@@ -138,6 +136,10 @@ export async function enterDrivingMode(
       },
     }, 3.5);
   });
+
+  // Reset car to origin facing +X for driving
+  car.group.position.set(0, carY, 0);
+  car.group.rotation.y = 0;
 
   // Car physics
   const carPhysics = createCarPhysics(car);

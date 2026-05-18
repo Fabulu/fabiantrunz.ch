@@ -52,10 +52,12 @@ export async function enterDrivingMode(
   const floatState = createPanelFloat(panels);
 
   // Lift ALL panels well above ground (radius=0.6, need Y >= 1.0 for bottom edge above 0)
+  // Save original Y values for restore on exit
+  const originalPanelY: number[] = [];
   for (const item of floatState) {
+    originalPanelY.push(item.panel.basePosition.y);
     const liftedY = Math.max(item.panel.basePosition.y, 1.0);
     item.panel.mesh.position.y = liftedY;
-    // Update basePosition so bob code doesn't reset it
     item.panel.basePosition.y = liftedY;
   }
 
@@ -260,7 +262,10 @@ export async function enterDrivingMode(
   function dispose(): void {
     setMode('transitioning');
 
-    // Reset panels back to gallery
+    // Restore original panel Y positions before reset animation
+    for (let i = 0; i < floatState.length; i++) {
+      floatState[i].panel.basePosition.y = originalPanelY[i];
+    }
     resetPanels(floatState);
 
     // Remove driving objects

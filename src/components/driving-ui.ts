@@ -2,27 +2,11 @@ export interface DrivingUI {
   mount(): void;
   unmount(): void;
   update(speed: number, boostActive: boolean, boostCharge: number): void;
-  onEnterClick(cb: () => void): void;
   onExitClick(cb: () => void): void;
 }
 
 export function createDrivingUI(): DrivingUI {
-  let enterCb: (() => void) | null = null;
   let exitCb: (() => void) | null = null;
-
-  // --- Enter 3D Mode button ---
-  const enterBtn = document.createElement("button");
-  enterBtn.textContent = "Enter 3D Mode";
-  enterBtn.dataset.i18n = "hero.3d_button";
-  Object.assign(enterBtn.style, {
-    position: "fixed", bottom: "20px", right: "20px", zIndex: "200",
-    background: "rgba(245,158,11,0.8)", color: "white", fontWeight: "bold",
-    padding: "12px 24px", borderRadius: "8px", border: "none", cursor: "pointer",
-    fontSize: "14px",
-  });
-  enterBtn.addEventListener("mouseenter", () => { enterBtn.style.background = "rgba(245,158,11,1)"; });
-  enterBtn.addEventListener("mouseleave", () => { enterBtn.style.background = "rgba(245,158,11,0.8)"; });
-  enterBtn.addEventListener("click", () => enterCb?.());
 
   // --- HUD container ---
   const hud = document.createElement("div");
@@ -85,7 +69,6 @@ export function createDrivingUI(): DrivingUI {
   hud.appendChild(nitroLabel);
   hud.appendChild(barContainer);
 
-  document.body.appendChild(enterBtn);
   document.body.appendChild(hud);
 
   // Escape key handler
@@ -96,12 +79,10 @@ export function createDrivingUI(): DrivingUI {
   return {
     mount() {
       hud.style.display = "block";
-      enterBtn.style.display = "none";
       document.addEventListener("keydown", onKey);
     },
     unmount() {
       hud.style.display = "none";
-      enterBtn.style.display = "block";
       document.removeEventListener("keydown", onKey);
     },
     update(speed: number, boostActive: boolean, boostCharge: number) {
@@ -123,7 +104,6 @@ export function createDrivingUI(): DrivingUI {
         barFill.style.background = "#ef4444";
       }
     },
-    onEnterClick(cb: () => void) { enterCb = cb; },
     onExitClick(cb: () => void) { exitCb = cb; },
   };
 }

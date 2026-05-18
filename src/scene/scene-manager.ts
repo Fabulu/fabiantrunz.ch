@@ -10,6 +10,7 @@ import { enterDrivingMode } from '../game/driving-mode';
 import type { DrivingMode } from '../game/driving-mode';
 import type { PreloadedAssets } from '../game/preload';
 import type { DrivingUI } from '../components/driving-ui';
+import { t } from '../i18n';
 
 // Responsive layout positions
 const DESKTOP_POSITIONS: [number, number, number][] = [
@@ -103,9 +104,73 @@ function applyLayout(
   });
 }
 
+// ── 3D Enter Button ─────────────────────────────────────────────────
+function createButtonTexture(_theme: 'light' | 'dark'): THREE.CanvasTexture {
+  const W = 512, H = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // Rounded rect background
+  const r = 24;
+  ctx.beginPath();
+  ctx.roundRect(8, 8, W - 16, H - 16, r);
+  ctx.fillStyle = 'rgba(245,158,11,0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 42px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(t('hero.3d_button'), W / 2, H / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function create3DButton(scene: THREE.Scene, theme: 'light' | 'dark'): {
+  mesh: THREE.Mesh;
+  texture: THREE.CanvasTexture;
+  updateTexture(theme: 'light' | 'dark'): void;
+  setVisible(v: boolean): void;
+} {
+  const texture = createButtonTexture(theme);
+  const geo = new THREE.PlaneGeometry(1.2, 0.3);
+  const mat = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    toneMapped: false,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(1.8, -1.3, 0.5);
+  scene.add(mesh);
+
+  return {
+    mesh,
+    texture,
+    updateTexture(newTheme: 'light' | 'dark') {
+      texture.dispose();
+      const newTex = createButtonTexture(newTheme);
+      mat.map = newTex;
+      mat.needsUpdate = true;
+      this.texture = newTex;
+    },
+    setVisible(v: boolean) {
+      mesh.visible = v;
+    },
+  };
+}
+
 export interface SceneAPI {
   onThemeChange(theme: 'light' | 'dark'): void;
   onLangChange(): void;
+  setDrivingRefs(assets: Promise<PreloadedAssets | null>, ui: DrivingUI): void;
   enterDriving(assets: PreloadedAssets, ui: DrivingUI): Promise<void>;
   exitDriving(): void;
   dispose(): void;
@@ -154,6 +219,33 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   // 6b. Apply initial responsive layout
   applyLayout(panels, camera, cameraBasePosition, width, height, false);
 
+  // 6c. 3D enter button
+  const enterButton = create3DButton(scene, theme);
+  let assetsPromiseRef: Promise<PreloadedAssets | null> | null = null;
+  let drivingUIRef: DrivingUI | null = null;
+
+  // Button raycaster (separate from panel interaction)
+  const btnRaycaster = new THREE.Raycaster();
+  let btnHovered = false;
+
+  function onBtnPointerDown(e: PointerEvent): void {
+    if (getMode() !== 'gallery') return;
+    if (!enterButton.mesh.visible) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    btnRaycaster.setFromCamera(new THREE.Vector2(mx, my), camera);
+    const hits = btnRaycaster.intersectObject(enterButton.mesh);
+    if (hits.length > 0 && assetsPromiseRef && drivingUIRef) {
+      e.preventDefault();
+      const ui = drivingUIRef;
+      assetsPromiseRef.then(assets => {
+        if (assets) sceneAPI.enterDriving(assets, ui);
+      });
+    }
+  }
+  renderer.domElement.addEventListener('pointerdown', onBtnPointerDown);
+
   // 7. Interaction
   const interaction = setupInteraction(camera, panels, renderer.domElement, cameraBasePosition);
 
@@ -194,6 +286,22 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
 
     interaction.update();
 
+    // 3D button hover check
+    if (enterButton.mesh.visible && !interaction.focusedPanel) {
+      btnRaycaster.setFromCamera(interaction.mouse, camera);
+      const btnHits = btnRaycaster.intersectObject(enterButton.mesh);
+      if (btnHits.length > 0 && !btnHovered) {
+        btnHovered = true;
+        gsap.to(enterButton.mesh.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.2 });
+        renderer.domElement.style.cursor = 'pointer';
+      } else if (btnHits.length === 0 && btnHovered) {
+        btnHovered = false;
+        gsap.to(enterButton.mesh.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
+      }
+      // Bob the button gently
+      enterButton.mesh.position.y = -1.3 + Math.sin(time * 1.5) * 0.015;
+    }
+
     // Cursor light follows mouse
     const nearPlane = new THREE.Vector3(interaction.mouse.x, interaction.mouse.y, 0.5);
     nearPlane.unproject(camera);
@@ -230,6 +338,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
       drivingMode = null;
     }
     interaction.setEnabled(true);
+    enterButton.setVisible(true);
     camera.position.copy(cameraBasePosition);
     camera.lookAt(0, cameraBasePosition.y, 0);
     camera.fov = 50;
@@ -239,19 +348,28 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   }
 
   // Return API
-  return {
+  const sceneAPI: SceneAPI = {
     onThemeChange(newTheme: 'light' | 'dark') {
       transitionLighting(lightingRig, scene, newTheme);
       transitionPanelMaterials(panels, newTheme);
       updatePanelTextures(panels, newTheme);
+      enterButton.updateTexture(newTheme);
     },
 
     onLangChange() {
-      updatePanelTextures(panels, getCurrentTheme() === 'light' ? 'light' : 'dark');
+      const th = getCurrentTheme() === 'light' ? 'light' : 'dark';
+      updatePanelTextures(panels, th);
+      enterButton.updateTexture(th);
+    },
+
+    setDrivingRefs(assets: Promise<PreloadedAssets | null>, ui: DrivingUI) {
+      assetsPromiseRef = assets;
+      drivingUIRef = ui;
     },
 
     async enterDriving(assets: PreloadedAssets, ui: DrivingUI) {
       interaction.setEnabled(false);
+      enterButton.setVisible(false);
       drivingMode = await enterDrivingMode(
         scene, camera, renderer, panels, lightingRig, assets,
         exitDrivingFn, ui,
@@ -263,6 +381,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
     dispose() {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', onResize);
+      renderer.domElement.removeEventListener('pointerdown', onBtnPointerDown);
       document.body.classList.remove('scene-active');
 
       interaction.dispose();
@@ -290,4 +409,6 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
       container.removeChild(renderer.domElement);
     },
   };
+
+  return sceneAPI;
 }

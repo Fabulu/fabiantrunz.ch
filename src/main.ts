@@ -48,23 +48,22 @@ async function main(): Promise<void> {
     wrapper.appendChild(createFallbackView());
   }
 
-  // Preload game assets in background (WASM, terrain, car, sky)
+  // Preload game assets in background (WASM, terrain, car, sky, audio)
   const assetsPromise = preloadGameAssets().catch((e) => {
     console.warn('Game asset preloading failed:', e);
     return null;
   });
 
-  // Driving UI — "Enter 3D Mode" button + HUD
+  // Driving UI — HUD only (enter button is now a 3D mesh in the scene)
   const drivingUI = createDrivingUI();
-  drivingUI.onEnterClick(async () => {
-    const assets = await assetsPromise;
-    if (assets && sceneApi) {
-      await sceneApi.enterDriving(assets, drivingUI);
-    }
-  });
   drivingUI.onExitClick(() => {
     sceneApi?.exitDriving();
   });
+
+  // Pass refs to scene so the 3D enter button can trigger driving mode
+  if (sceneApi) {
+    sceneApi.setDrivingRefs(assetsPromise, drivingUI);
+  }
 
   // Wire theme changes to scene
   document.addEventListener('theme-changed', ((e: CustomEvent) => {

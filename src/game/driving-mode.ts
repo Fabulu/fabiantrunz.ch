@@ -51,45 +51,41 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Lift panels above terrain height so they don't clip into the hill
-  const carY = getHeightAt(0, 0);
-  const panelLift = Math.max(0, carY - 0.2 + 0.5); // ensure panels are above terrain
-  for (const item of floatState) {
-    item.panel.mesh.position.y += panelLift;
-  }
-
-  // Car spawns inside the box, among the panels
+  // Car spawns inside the box at origin, among the panels
+  const carY = getHeightAt(0, 0); // ≈ 0 now (flat at origin)
   const car = preloadedAssets.car;
   car.group.position.set(0, carY, 0);
-  car.group.visible = true; // visible from the start — it's in the box with us
+  car.group.visible = true;
   scene.add(car.group);
 
   // Create walls that SURROUND the camera and panels
   const walls = createBoxWalls(scene);
 
   // ─── Cinematic transition ────────────────────────────────────────
-  // Camera STAYS at gallery position during wall reveal.
-  // Walls open around the camera/car/panels to reveal the world.
-  // Only AFTER walls are gone does camera move to chase position.
+  // Camera stays inside the box. Walls open around us. World appears.
+  // Then camera arcs smoothly to chase position behind car.
+
+  // Add driving lights EARLY so terrain isn't black when it appears
+  const drivingLights = createDrivingLighting(scene);
 
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
-    // Sound effect at start
+    // Sound
     master.call(() => audio.playEffect('box-open'), undefined, 0.3);
 
-    // Walls start opening at 0.3s
+    // Walls open starting at 0.3s
     const wallTl = createWallOpenTimeline(walls);
     master.add(wallTl, 0.3);
 
-    // At 0.8s: add sky + terrain behind the opening walls
+    // At 0.8s: add sky + terrain (lit by driving lights already in scene)
     master.call(() => {
       scene.background = preloadedAssets.sky;
       scene.add(preloadedAssets.terrain);
       scene.fog = createFog();
     }, undefined, 0.8);
 
-    // At 1.2s: swap gallery lighting for driving lighting
+    // At 1.0s: remove gallery lighting (driving lights already active)
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -97,37 +93,47 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 1.2);
+    }, undefined, 1.0);
 
-    // Camera stays at gallery position during wall open (0-3s)
-    // Just a gentle drift upward so you see the world appearing
+    // Camera stays put during wall reveal — just a tiny drift
+    // Gallery cam is at (0, 0.3, 4.5)
     master.to(camera.position, {
       x: 0,
-      y: 1.5,
-      z: 5.0,
+      y: 1.0,
+      z: 4.8,
       duration: 2.5,
-      ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(0, carY + 0.5, 0),
-    }, 0.5);
+      ease: 'power1.inOut',
+      onUpdate: () => camera.lookAt(0, 0.3, 0),
+    }, 0.3);
 
-    // Dispose walls once fully open
+    // Dispose walls
     master.call(() => walls.dispose(), undefined, 3.0);
 
-    // Phase 2 (3.0-4.8s): Camera arcs to chase position behind car
-    const behindX = -Math.cos(0) * 8; // = -8
-    const behindZ = -Math.sin(0) * 8; // = 0
-    master.to(camera.position, {
-      x: behindX,
-      y: carY + 4,
-      z: behindZ,
-      duration: 1.8,
+    // Phase 2 (3.0-5.0s): Camera arcs around to behind car
+    // Use parametric arc to avoid gimbal spin:
+    // Start angle ≈ PI/2 (camera at Z=+5, X=0 relative to car)
+    // End angle = PI (camera at X=-8, Z=0 relative to car)
+    // Arc at constant radius ~8 from car
+    const arcObj = { t: 0 };
+    const startAngle = Math.atan2(4.8, 0); // ≈ PI/2
+    const endAngle = Math.PI;
+    const arcRadius = 8;
+    const startY = 1.0;
+    const endY = carY + 4;
+    master.to(arcObj, {
+      t: 1,
+      duration: 2.0,
       ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(0, carY + 1, 0),
+      onUpdate: () => {
+        const angle = startAngle + (endAngle - startAngle) * arcObj.t;
+        const y = startY + (endY - startY) * arcObj.t;
+        camera.position.x = Math.cos(angle) * arcRadius;
+        camera.position.z = Math.sin(angle) * arcRadius;
+        camera.position.y = y;
+        camera.lookAt(0, carY + 1, 0);
+      },
     }, 3.0);
   });
-
-  // Driving lighting (added after transition so it doesn't conflict with gallery lights)
-  const drivingLights = createDrivingLighting(scene);
 
   // Car physics
   const carPhysics = createCarPhysics(car);

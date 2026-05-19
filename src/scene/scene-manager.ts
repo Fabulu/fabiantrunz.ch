@@ -74,7 +74,7 @@ function applyLayout(
   } else {
     positions = DESKTOP_POSITIONS;
     // Widen FOV for narrow aspects (4:3 tablets) so outer cards aren't clipped
-    fov = aspect < 1.5 ? 60 : 50;
+    fov = (w / h) < 1.5 ? 60 : 50;
     camPos = [0, 1.8, 4.5];
     panelScale = 1.0;
     aboutScale = 0.85;

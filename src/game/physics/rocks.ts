@@ -44,20 +44,14 @@ export function createRocks(
     const radius = 0.3 + rand() * 0.7; // 0.3 to 1.0
     const y = getHeightAt(x, z) + radius;
 
-    // Create rock geometry — indexed so shared vertices stay watertight
-    const geo = new THREE.IcosahedronGeometry(radius, 2);
-    const pos = geo.getAttribute('position');
-    for (let v = 0; v < pos.count; v++) {
-      // Multiplicative: scale each vertex radially by 0.97-1.03
-      const scale = 1 + (rand() - 0.5) * 0.06;
-      pos.setX(v, pos.getX(v) * scale);
-      pos.setY(v, pos.getY(v) * scale);
-      pos.setZ(v, pos.getZ(v) * scale);
-    }
-    geo.computeVertexNormals();
+    // Rock geometry — no displacement (watertight), vary detail for variety
+    const detail = i % 2 === 0 ? 1 : 2;
+    const geo = new THREE.IcosahedronGeometry(radius, detail);
+    // Consume rand() values to keep seeded sequence stable
+    for (let v = 0; v < 10; v++) rand();
 
     const color = rockColors[Math.floor(rand() * rockColors.length)]!;
-    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true, side: THREE.DoubleSide });
+    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
     scene.add(mesh);

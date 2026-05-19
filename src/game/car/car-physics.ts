@@ -19,7 +19,8 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   let boostActive = false;
   let boostCharge = 1.0;
   let boostIntensity = 0;
-  let boostCooldown = 0; // cooldown when charge hits 0
+  let boostCooldown = 0;
+  let boostCooldownTriggered = false;
   let jumpConsumed = false;
 
   function tick(dt: number, input: InputState): void {
@@ -41,17 +42,21 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       boostCooldown = Math.max(0, boostCooldown - dt);
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
-    } else if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE) {
+    } else if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE && !boostCooldownTriggered) {
       boostActive = true;
       boostCharge = Math.max(0, boostCharge - CONFIG.BOOST_DRAIN_RATE * dt);
-      // Trigger cooldown when charge depleted
-      if (boostCharge <= 0) {
+      // Trigger cooldown when charge gets low
+      if (boostCharge <= CONFIG.BOOST_MIN_ACTIVATE) {
         boostActive = false;
+        boostCharge = 0;
         boostCooldown = CONFIG.BOOST_COOLDOWN_TIME;
+        boostCooldownTriggered = true;
       }
     } else {
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
+      // Reset cooldown trigger once player releases boost key
+      if (!input.boost) boostCooldownTriggered = false;
     }
 
     // Boost intensity ramps up while active, drops when released

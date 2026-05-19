@@ -1,7 +1,6 @@
 import {
   BufferAttribute,
   BufferGeometry,
-  NormalBlending,
   Points,
   PointsMaterial,
 } from 'three';
@@ -14,7 +13,6 @@ export interface BoostParticles {
 
 const FIRE_COUNT = 60;
 const SMOKE_COUNT = 20;
-const TOTAL = FIRE_COUNT + SMOKE_COUNT;
 const HIDE_Y = -500;
 
 export function createBoostParticles(scene: Scene): BoostParticles {

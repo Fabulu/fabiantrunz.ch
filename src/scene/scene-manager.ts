@@ -13,23 +13,24 @@ import type { DrivingUI } from '../components/driving-ui';
 import { t } from '../i18n';
 
 // Responsive layout positions
+// All Y positions lifted +1 so the about panel (bottom of arc) stays above ground in 3D mode
 const DESKTOP_POSITIONS: [number, number, number][] = [
-  [-3.0, 0.8, 0.2], [-1.8, 0.85, 0.072], [-0.6, 0.82, 0.008],
-  [0.6, 0.87, 0.008], [1.8, 0.81, 0.072], [3.0, 0.84, 0.2],
-  [0, -0.2, 0.1],
+  [-3.0, 1.2, 0.2], [-1.8, 1.25, 0.072], [-0.6, 1.22, 0.008],
+  [0.6, 1.27, 0.008], [1.8, 1.21, 0.072], [3.0, 1.24, 0.2],
+  [0, 0.8, 0.1],
 ];
 
 const PORTRAIT_POSITIONS: [number, number, number][] = [
-  [-0.8, 2.0, 0], [0.8, 2.0, 0],
-  [-0.8, 0.8, 0], [0.8, 0.8, 0],
-  [-0.8, -0.4, 0], [0.8, -0.4, 0],
-  [0, -1.4, 0],
+  [-0.8, 2.8, 0], [0.8, 2.8, 0],
+  [-0.8, 1.55, 0], [0.8, 1.55, 0],
+  [-0.8, 0.3, 0], [0.8, 0.3, 0],
+  [0, -0.4, 0],
 ];
 
 // Landscape mobile positions: two rows
 const LANDSCAPE_POSITIONS: [number, number, number][] = [
-  [-1.8, 0.8, 0], [-0.6, 0.8, 0], [0.6, 0.8, 0], [1.8, 0.8, 0],
-  [-1.2, -0.2, 0], [0, -0.2, 0], [1.2, -0.2, 0],
+  [-1.8, 1.55, 0], [-0.6, 1.55, 0], [0.6, 1.55, 0], [1.8, 1.55, 0],
+  [-1.2, 0.55, 0], [0, 0.55, 0], [1.2, 0.55, 0],
 ];
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {
@@ -59,19 +60,19 @@ function applyLayout(
   if (mode === 'portrait') {
     positions = PORTRAIT_POSITIONS;
     fov = 70;
-    camPos = [0, 0, 5.0];
+    camPos = [0, 1.0, 5.0];
     panelScale = 0.65;
     aboutScale = 0.6;
   } else if (mode === 'landscape-mobile') {
     positions = LANDSCAPE_POSITIONS;
     fov = 50;
-    camPos = [0, 0, 3.5];
+    camPos = [0, 0.75, 3.5];
     panelScale = 0.7;
     aboutScale = 0.65;
   } else {
     positions = DESKTOP_POSITIONS;
     fov = 50;
-    camPos = [0, 0.3, 4.5];
+    camPos = [0, 1.3, 4.5];
     panelScale = 1.0;
     aboutScale = 0.85;
   }
@@ -200,9 +201,9 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   const width = container.clientWidth;
   const height = container.clientHeight;
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-  const cameraBasePosition = new THREE.Vector3(0, 0.3, 4.5);
+  const cameraBasePosition = new THREE.Vector3(0, 1.3, 4.5);
   camera.position.copy(cameraBasePosition);
-  camera.lookAt(0, 0, 0);
+  camera.lookAt(0, 1.3, 0);
 
   // 3. Scene
   const scene = new THREE.Scene();

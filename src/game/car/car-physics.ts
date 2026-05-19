@@ -163,9 +163,10 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   function correctPosition(x: number, z: number, vel: number): void {
     position.x = x;
     position.z = z;
-    if (!isAirborne) position.y = getHeightAt(x, z);
+    // Don't recalc Y here — let normal terrain following handle it next tick
     velocity = vel;
-    car.group.position.copy(position);
+    car.group.position.x = x;
+    car.group.position.z = z;
   }
 
   return { tick, getState, correctPosition, reset };

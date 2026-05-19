@@ -339,16 +339,14 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
 
   // Exit driving helper (needs to be a named function so enterDriving can reference it)
   function exitDrivingFn() {
-    if (drivingMode) {
-      drivingMode.dispose();
-      drivingMode = null;
-    }
+    if (!drivingMode) return; // guard: still transitioning or already exited
+    drivingMode.dispose();
+    drivingMode = null;
     interaction.setEnabled(true);
     enterButton.setVisible(true);
     camera.position.copy(cameraBasePosition);
     camera.lookAt(0, cameraBasePosition.y, 0);
-    camera.fov = 50;
-    camera.updateProjectionMatrix();
+    // applyLayout sets the correct FOV for the current viewport
     applyLayout(panels, camera, cameraBasePosition,
       container.clientWidth, container.clientHeight, true);
   }

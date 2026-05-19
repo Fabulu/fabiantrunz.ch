@@ -40,10 +40,11 @@ export function tickPanelFloat(
       item.panel.mesh.position.y =
         item.panel.basePosition.y + Math.sin(item.bobPhase) * 0.02;
 
-      // Check car proximity
+      // Check car proximity (3D distance so panels above car don't scatter)
       const dx = item.panel.mesh.position.x - carPosition.x;
+      const dy = item.panel.mesh.position.y - carPosition.y;
       const dz = item.panel.mesh.position.z - carPosition.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
+      const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
       if (dist < IMPACT_RADIUS) {
         // Scatter away from car

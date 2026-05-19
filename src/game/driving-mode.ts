@@ -66,7 +66,7 @@ export async function enterDrivingMode(
 
   // Box walls match current theme background (dark=0x050508, light=0xf5f5f8)
   const isDark = document.documentElement.dataset.theme !== 'light';
-  const wallColor = isDark ? 0x050508 : 0xf5f5f8;
+  const wallColor = isDark ? 0x050508 : 0xffffff;
   const walls = createBoxWalls(scene, wallColor);
 
   // Driving lights early
@@ -136,21 +136,7 @@ export async function enterDrivingMode(
       scene.fog = createFog();
     }, undefined, 2.0);
 
-    // Cross-fade lighting: gallery dims out over 2s while driving lights are already in
-    master.to(galleryLightingRig.ambient, { intensity: 0, duration: 2.0 }, 1.5);
-    master.to(galleryLightingRig.spot, { intensity: 0, duration: 2.0 }, 1.5);
-    master.to(galleryLightingRig.edgeLightLeft, { intensity: 0, duration: 1.5 }, 1.5);
-    master.to(galleryLightingRig.edgeLightRight, { intensity: 0, duration: 1.5 }, 1.5);
-    master.to(galleryLightingRig.cursorLight, { intensity: 0, duration: 1.5 }, 1.5);
-    // Remove gallery lights after fade completes
-    master.call(() => {
-      scene.remove(galleryLightingRig.ambient);
-      scene.remove(galleryLightingRig.spot);
-      scene.remove(galleryLightingRig.spot.target);
-      scene.remove(galleryLightingRig.edgeLightLeft);
-      scene.remove(galleryLightingRig.edgeLightRight);
-      scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 4.0);
+    // Keep gallery lighting throughout — no removal, no fade
   });
 
   // Car physics — inits from car.group.position (no teleport)
@@ -272,20 +258,9 @@ export async function enterDrivingMode(
     // Driving lights
     drivingLights.dispose();
 
-    // Restore gallery lighting (intensities were zeroed during transition fade)
+    // Restore gallery (lighting stays in scene — never removed)
     scene.fog = null;
     scene.background = new THREE.Color(0x050508);
-    galleryLightingRig.ambient.intensity = 1.0;
-    galleryLightingRig.spot.intensity = 0.5;
-    galleryLightingRig.edgeLightLeft.intensity = 0.3;
-    galleryLightingRig.edgeLightRight.intensity = 0.3;
-    galleryLightingRig.cursorLight.intensity = 15;
-    scene.add(galleryLightingRig.ambient);
-    scene.add(galleryLightingRig.spot);
-    scene.add(galleryLightingRig.spot.target);
-    scene.add(galleryLightingRig.edgeLightLeft);
-    scene.add(galleryLightingRig.edgeLightRight);
-    scene.add(galleryLightingRig.cursorLight);
 
     // Cleanup
     proximity.dispose();

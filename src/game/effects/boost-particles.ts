@@ -46,6 +46,7 @@ function createGroup(scene: Scene, color: number, baseSize: number, baseOpacity:
 
   const pts = new Points(geo, mat);
   pts.frustumCulled = false;
+  pts.renderOrder = 999; // render after everything else
   scene.add(pts);
 
   return { count, pos, vel, life, geo, mat, pts };

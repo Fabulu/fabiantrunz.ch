@@ -136,7 +136,13 @@ export async function enterDrivingMode(
       scene.fog = createFog();
     }, undefined, 2.0);
 
-    // At 2.5s: swap lighting
+    // Cross-fade lighting: gallery dims out over 2s while driving lights are already in
+    master.to(galleryLightingRig.ambient, { intensity: 0, duration: 2.0 }, 1.5);
+    master.to(galleryLightingRig.spot, { intensity: 0, duration: 2.0 }, 1.5);
+    master.to(galleryLightingRig.edgeLightLeft, { intensity: 0, duration: 1.5 }, 1.5);
+    master.to(galleryLightingRig.edgeLightRight, { intensity: 0, duration: 1.5 }, 1.5);
+    master.to(galleryLightingRig.cursorLight, { intensity: 0, duration: 1.5 }, 1.5);
+    // Remove gallery lights after fade completes
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -144,7 +150,7 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 2.5);
+    }, undefined, 4.0);
   });
 
   // Car physics — inits from car.group.position (no teleport)
@@ -266,9 +272,14 @@ export async function enterDrivingMode(
     // Driving lights
     drivingLights.dispose();
 
-    // Restore gallery
+    // Restore gallery lighting (intensities were zeroed during transition fade)
     scene.fog = null;
     scene.background = new THREE.Color(0x050508);
+    galleryLightingRig.ambient.intensity = 1.0;
+    galleryLightingRig.spot.intensity = 0.5;
+    galleryLightingRig.edgeLightLeft.intensity = 0.3;
+    galleryLightingRig.edgeLightRight.intensity = 0.3;
+    galleryLightingRig.cursorLight.intensity = 15;
     scene.add(galleryLightingRig.ambient);
     scene.add(galleryLightingRig.spot);
     scene.add(galleryLightingRig.spot.target);

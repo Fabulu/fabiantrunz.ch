@@ -121,7 +121,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     // 11. Wheel spin
     for (const pivot of car.wheels) {
       const wheelGroup = pivot.children[0];
-      if (wheelGroup) wheelGroup.rotation.z += velocity * dt * 3;
+      if (wheelGroup) wheelGroup.rotation.z -= velocity * dt * 3;
     }
 
     // 12. Front wheel steering visual

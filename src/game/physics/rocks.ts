@@ -57,7 +57,7 @@ export function createRocks(
     geo.computeVertexNormals();
 
     const color = rockColors[Math.floor(rand() * rockColors.length)]!;
-    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true });
+    const mat = new THREE.MeshLambertMaterial({ color, flatShading: true, side: THREE.DoubleSide });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
     scene.add(mesh);

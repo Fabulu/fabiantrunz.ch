@@ -8,6 +8,7 @@ export interface AudioManager {
   stopEngine(): void;
   startBoostLoop(): void;
   stopBoostLoop(): void;
+  setBoostIntensity(intensity: number): void;
   setMuted(muted: boolean): void;
   isMuted(): boolean;
   setVolume(volume: number): void;
@@ -142,6 +143,14 @@ export function createAudioManager(rawBuffers: Map<string, ArrayBuffer>): AudioM
     stopBoostLoop() {
       rampAndStop(boostGain, boostSource, 150);
       boostSource = null;
+    },
+    setBoostIntensity(intensity: number) {
+      if (!boostSource) return;
+      const i = Math.max(0, Math.min(1, intensity));
+      // Lower pitch at start (bassy), higher as intensity builds
+      boostSource.playbackRate.value = 0.7 + i * 0.5; // 0.7 → 1.2
+      // Louder as intensity builds
+      boostGain.gain.value = 0.25 + i * 0.35; // 0.25 → 0.6
     },
     setEngineSpeed(speed: number) {
       if (!engineSource) return;

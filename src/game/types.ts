@@ -25,6 +25,7 @@ export interface CarPhysicsState {
   isAirborne: boolean;
   boostActive: boolean;
   boostCharge: number;   // 0..1 normalized charge level
+  boostIntensity: number; // 0..1 ramps up while boosting
 }
 
 export interface GameConfig {

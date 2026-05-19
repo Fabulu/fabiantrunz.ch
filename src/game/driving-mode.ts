@@ -62,12 +62,14 @@ export async function enterDrivingMode(
     item.panel.basePosition.y = liftedY;
   }
 
-  // Car spawns IN FRONT of panels (between camera and panels), facing +X
-  // Camera at Z=4.5, car at Z=2, panels at Z≈0
-  const carY = getHeightAt(0, 2); // terrain height at car spawn
+  // Car spawns in front of panels, pulled back (Z=1), rear facing camera
+  // rotation.y = PI/2 → car model front (+X) faces -Z, rear faces +Z (toward camera)
+  // heading = -rotation.y = -PI/2
+  // Chase cam at heading=-PI/2: (car.x, Y, car.z + 8) — behind car in +Z
+  const carY = getHeightAt(0, 1);
   const car = preloadedAssets.car;
-  car.group.position.set(0, Math.max(carY, 0.3), 2); // above floor
-  car.group.rotation.y = 0; // facing +X from the start
+  car.group.position.set(0, Math.max(carY, 0.3), 1);
+  car.group.rotation.y = Math.PI / 2; // rear faces camera
   car.group.visible = true;
   scene.add(car.group);
 
@@ -121,37 +123,19 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.cursorLight);
     }, undefined, 2.0);
 
-    // Phase 3 (4.0-6.0s): Camera arcs to chase position
-    // From (0, 2.5, 8) arc to (-8, carY+4, 2) — behind car facing +X
-    // Car at (0, carY, 2). Chase cam at heading=0: (car.x-8, car.y+4, car.z)
-    const arcObj = { t: 0 };
-    const startZ = 8;
-    const endChaseX = carPos.x - 8; // -8
-    const endChaseZ = carPos.z;     // 2
-    const endChaseY = carPos.y + 4;
-    master.to(arcObj, {
-      t: 1,
-      duration: 2.0,
+    // Phase 3 (4.0-5.5s): Camera settles to chase position
+    // Car at (0, carY, 1) facing -Z. Chase cam at heading=-PI/2: (0, carY+4, 1+8) = (0, carY+4, 9)
+    // Camera is already at (0, 2.5, 8) — just drift to (0, carY+4, 9). No arc needed!
+    master.to(camera.position, {
+      x: 0,
+      y: carPos.y + 4,
+      z: carPos.z + 8,
+      duration: 1.5,
       ease: 'power2.inOut',
-      onUpdate: () => {
-        // Arc from behind (+Z) to left (-X) of car
-        const relStartZ = startZ - carPos.z; // 6
-        const relEndX = endChaseX - carPos.x; // -8
-        const relEndZ = endChaseZ - carPos.z; // 0
-        const startAngle = Math.atan2(relStartZ, 0); // PI/2
-        const endAngle = Math.atan2(relEndZ, relEndX); // PI
-        const angle = startAngle + (endAngle - startAngle) * arcObj.t;
-        const startR = Math.sqrt(0 + relStartZ * relStartZ); // 6
-        const endR = Math.sqrt(relEndX * relEndX + relEndZ * relEndZ); // 8
-        const r = startR + (endR - startR) * arcObj.t;
-        camera.position.x = carPos.x + Math.cos(angle) * r;
-        camera.position.z = carPos.z + Math.sin(angle) * r;
-        camera.position.y = 2.5 + (endChaseY - 2.5) * arcObj.t;
-        camera.lookAt(carPos.x, carPos.y + 1, carPos.z);
-      },
+      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
     }, 4.0);
 
-    // Dispose walls well after they've slid away
+    // Dispose walls after they've fallen
     master.call(() => walls.dispose(), undefined, 8.0);
   });
 
@@ -210,9 +194,9 @@ export async function enterDrivingMode(
 
     // Track if car has moved from spawn (for panel scatter gate)
     if (!carHasMoved) {
-      const dx = state.position.x;
-      const dz = state.position.z;
-      if (dx * dx + dz * dz > 9) carHasMoved = true; // moved 3+ units from origin
+      const dx = state.position.x - 0;
+      const dz = state.position.z - 1; // car starts at Z=1
+      if (dx * dx + dz * dz > 9) carHasMoved = true; // moved 3+ units from spawn
     }
 
     // Obstacle collision resolution
@@ -225,13 +209,14 @@ export async function enterDrivingMode(
     audio.setEngineSpeed(Math.abs(state.velocity) / CONFIG.MAX_SPEED);
     if (state.boostActive && !prevBoostActive) audio.startBoostLoop();
     if (!state.boostActive && prevBoostActive) audio.stopBoostLoop();
+    audio.setBoostIntensity(state.boostIntensity);
     if (state.isAirborne && !prevAirborne) audio.playEffect('jump');
     if (!state.isAirborne && prevAirborne) audio.playEffect('land');
     prevBoostActive = state.boostActive;
     prevAirborne = state.isAirborne;
 
     // Boost particles
-    boostParticles.tick(dt, car.group, state.heading, state.boostActive);
+    boostParticles.tick(dt, car.group, state.heading, state.boostActive, state.boostIntensity);
 
     // Rapier sync
     carCollider.syncFromPhysics(state.position, state.heading);
@@ -254,7 +239,7 @@ export async function enterDrivingMode(
     }
 
     // Camera
-    updateChaseCamera(camera, car.group, state.heading, dt, state.boostActive);
+    updateChaseCamera(camera, car.group, state.heading, dt, state.boostIntensity);
 
     // Proximity overlay
     proximity.update(state.position);

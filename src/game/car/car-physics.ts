@@ -12,26 +12,27 @@ export interface CarPhysicsController {
 export function createCarPhysics(car: CarObject): CarPhysicsController {
   const position = car.group.position.clone();
   let velocity = 0;
-  let heading = 0;
+  let heading = -car.group.rotation.y; // derive heading from current rotation
   let steeringAngle = 0;
   let verticalVelocity = 0;
   let isAirborne = false;
   let boostActive = false;
   let boostCharge = 1.0;
-  let jumpConsumed = false; // edge detection: only jump once per key press
+  let boostIntensity = 0; // ramps 0→1 while boosting
+  let jumpConsumed = false;
 
   function tick(dt: number, input: InputState): void {
-    if (dt <= 0 || dt > 0.2) return; // skip zero or huge dt (tab unfocus)
+    if (dt <= 0 || dt > 0.2) return;
 
     // 1. Acceleration
     if (input.forward) velocity += CONFIG.ACCELERATION * dt;
     // 2. Reverse (slower)
     if (input.backward) velocity -= CONFIG.ACCELERATION * dt * 0.6;
-    // 3. Brake (clamped to prevent sign flip)
+    // 3. Brake
     if (input.brake) velocity *= Math.max(0, 1 - CONFIG.BRAKE_FORCE * dt);
-    // 4. Friction (time-corrected: consistent regardless of frame rate)
+    // 4. Friction
     velocity *= Math.pow(CONFIG.FRICTION, dt * 60);
-    // 5. Dead zone — snap to zero when nearly stopped
+    // 5. Dead zone
     if (Math.abs(velocity) < 0.01) velocity = 0;
 
     // Boost logic — hold to drain, release to recharge
@@ -43,12 +44,22 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
     }
-    const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * CONFIG.BOOST_MULTIPLIER : CONFIG.MAX_SPEED;
+
+    // Boost intensity ramps up while active, drops when released
+    if (boostActive) {
+      boostIntensity = Math.min(1, boostIntensity + 0.5 * dt); // reaches 1.0 in 2s
+    } else {
+      boostIntensity = Math.max(0, boostIntensity - 2.0 * dt); // drops in 0.5s
+    }
+
+    // Effective speed scales with intensity (gradual ramp, not instant 3x)
+    const effectiveMultiplier = 1.0 + (CONFIG.BOOST_MULTIPLIER - 1.0) * boostIntensity;
+    const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * effectiveMultiplier : CONFIG.MAX_SPEED;
 
     // 6. Clamp speed
     velocity = Math.max(-effectiveMaxSpeed / 3, Math.min(effectiveMaxSpeed, velocity));
 
-    // 7. Steering lerp (clamped factor so it can't overshoot)
+    // 7. Steering lerp
     const steerLerp = Math.min(1, 10 * dt);
     if (input.left) {
       steeringAngle += (-0.5 - steeringAngle) * steerLerp;
@@ -58,7 +69,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       steeringAngle += (0 - steeringAngle) * steerLerp;
     }
 
-    // 8. Heading (steering only affects heading when car is moving, reduced when airborne)
+    // 8. Heading
     heading += steeringAngle * (velocity / CONFIG.MAX_SPEED) * CONFIG.TURN_RATE * dt * (isAirborne ? 0.3 : 1.0);
 
     // 9. Position (XZ)
@@ -67,7 +78,6 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
 
     // Terrain following + jump
     const groundHeight = getHeightAt(position.x, position.z);
-    // Edge-detect jump: only trigger once per key press
     if (input.jump && !isAirborne && !jumpConsumed) {
       verticalVelocity = CONFIG.JUMP_FORCE;
       isAirborne = true;
@@ -90,13 +100,13 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     car.group.position.copy(position);
     car.group.rotation.y = -heading;
 
-    // 11. Wheel spin — applied to inner wheelGroup (child[0] of each pivot)
+    // 11. Wheel spin
     for (const pivot of car.wheels) {
       const wheelGroup = pivot.children[0];
       if (wheelGroup) wheelGroup.rotation.z += velocity * dt * 3;
     }
 
-    // 12. Front wheel steering visual — negated because car.group.rotation.y = -heading
+    // 12. Front wheel steering visual
     for (const pivot of car.frontWheels) {
       pivot.rotation.y = -steeringAngle;
     }
@@ -111,6 +121,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       isAirborne,
       boostActive,
       boostCharge,
+      boostIntensity,
     };
   }
 
@@ -123,6 +134,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     isAirborne = false;
     boostActive = false;
     boostCharge = 1.0;
+    boostIntensity = 0;
     jumpConsumed = false;
     car.group.position.set(0, getHeightAt(0, 0), 0);
     car.group.rotation.set(0, 0, 0);

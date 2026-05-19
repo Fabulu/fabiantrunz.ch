@@ -13,24 +13,25 @@ import type { DrivingUI } from '../components/driving-ui';
 import { t } from '../i18n';
 
 // Responsive layout positions
-// All Y positions lifted +1 so the about panel (bottom of arc) stays above ground in 3D mode
+// Project cards lifted +1 from originals so they're above ground in 3D mode.
+// About card stays at original position. Camera also lifted +1 to compensate.
 const DESKTOP_POSITIONS: [number, number, number][] = [
   [-3.0, 1.2, 0.2], [-1.8, 1.25, 0.072], [-0.6, 1.22, 0.008],
   [0.6, 1.27, 0.008], [1.8, 1.21, 0.072], [3.0, 1.24, 0.2],
-  [0, 0.8, 0.1],
+  [0, -0.85, 0.1], // about: ORIGINAL position, not lifted
 ];
 
 const PORTRAIT_POSITIONS: [number, number, number][] = [
   [-0.8, 2.8, 0], [0.8, 2.8, 0],
   [-0.8, 1.55, 0], [0.8, 1.55, 0],
   [-0.8, 0.3, 0], [0.8, 0.3, 0],
-  [0, -0.4, 0],
+  [0, -1.8, 0], // about: ORIGINAL
 ];
 
 // Landscape mobile positions: two rows
 const LANDSCAPE_POSITIONS: [number, number, number][] = [
   [-1.8, 1.55, 0], [-0.6, 1.55, 0], [0.6, 1.55, 0], [1.8, 1.55, 0],
-  [-1.2, 0.55, 0], [0, 0.55, 0], [1.2, 0.55, 0],
+  [-1.2, 0.45, 0], [0, 0.45, 0], [1.2, 0.45, 0], // about row not separate here
 ];
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {

@@ -94,7 +94,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   track(frontGeo, frontMat);
 
   // FLOOR
-  const floorGeo = new THREE.PlaneGeometry(W * 2 + 4, D + 4); // slight overshoot
+  const floorGeo = new THREE.PlaneGeometry(W * 2 + 1, D + 1); // matches box with tiny overshoot
   const floorMat = wallMat(wallColor);
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.position.set(0, Y0, ZM);

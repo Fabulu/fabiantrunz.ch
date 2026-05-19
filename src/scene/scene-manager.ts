@@ -26,7 +26,7 @@ const PORTRAIT_POSITIONS: [number, number, number][] = [
   [-0.8, 3.8, 0], [0.8, 3.8, 0],
   [-0.8, 2.55, 0], [0.8, 2.55, 0],
   [-0.8, 1.3, 0], [0.8, 1.3, 0],
-  [0, 0.2, 0], // about: lifted to stay above ground in 3D
+  [0, 0.5, 0], // about: high enough for bottom edge above ground in 3D
 ];
 
 // Landscape mobile positions: two rows (about is last = index 6)
@@ -158,7 +158,7 @@ function create3DButton(scene: THREE.Scene, theme: 'light' | 'dark'): {
     depthWrite: false,
   });
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(0, 2.6, 0.5); // centered, above the cards
+  mesh.position.set(0, 0, 0.5); // positioned by positionButton()
   scene.add(mesh);
 
   return {
@@ -229,10 +229,23 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   // 6b. Apply initial responsive layout
   applyLayout(panels, camera, cameraBasePosition, width, height, false);
 
-  // 6c. 3D enter button
+  // 6c. 3D enter button (responsive positioning)
   const enterButton = create3DButton(scene, theme);
   let assetsPromiseRef: Promise<PreloadedAssets | null> | null = null;
   let drivingUIRef: DrivingUI | null = null;
+
+  function positionButton(w: number, h: number): void {
+    const mode = getLayoutMode(w, h);
+    if (mode === 'portrait') {
+      enterButton.mesh.position.set(0.5, -0.8, 0.5);
+    } else if (mode === 'landscape-mobile') {
+      enterButton.mesh.position.set(0, 0.8, 0.5);
+    } else {
+      enterButton.mesh.position.set(1.2, 2.6, 0.5);
+    }
+    enterButton.mesh.userData.baseY = enterButton.mesh.position.y;
+  }
+  positionButton(width, height);
 
   // Button raycaster (separate from panel interaction)
   const btnRaycaster = new THREE.Raycaster();
@@ -309,7 +322,8 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
         gsap.to(enterButton.mesh.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
       }
       // Bob the button gently
-      enterButton.mesh.position.y = 2.6 + Math.sin(time * 1.5) * 0.015;
+      // Bob uses a stored base Y so it doesn't accumulate
+      enterButton.mesh.position.y = (enterButton.mesh.userData.baseY ?? enterButton.mesh.position.y) + Math.sin(time * 1.5) * 0.015;
     }
 
     // Cursor light follows mouse
@@ -333,6 +347,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
       const h = container.clientHeight;
       renderer.setSize(w, h);
       applyLayout(panels, camera, cameraBasePosition, w, h, true);
+      positionButton(w, h);
     });
   }
   window.addEventListener('resize', onResize);

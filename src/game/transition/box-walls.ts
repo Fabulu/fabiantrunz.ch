@@ -39,7 +39,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   leftMesh.rotation.y = Math.PI / 2;
   leftMesh.position.y = 5;
   const left = new THREE.Group();
-  left.position.set(-6, 0.15, 6);
+  left.position.set(-4, 0.15, 6);
   left.add(leftMesh);
   scene.add(left);
   track(leftGeo, leftMat);
@@ -51,7 +51,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   rightMesh.rotation.y = -Math.PI / 2;
   rightMesh.position.y = 5;
   const right = new THREE.Group();
-  right.position.set(6, 0.15, 6);
+  right.position.set(4, 0.15, 6);
   right.add(rightMesh);
   scene.add(right);
   track(rightGeo, rightMat);
@@ -107,11 +107,11 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
 export function createWallOpenTimeline(box: BoxWalls): gsap.core.Timeline {
   const tl = gsap.timeline();
 
-  // Left falls outward
-  tl.to(box.left.rotation, { z: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0);
+  // Left falls outward (z: +PI/2 makes mesh at local Y=5 fall to local X=-5 = world left)
+  tl.to(box.left.rotation, { z: Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0);
 
-  // Right falls outward
-  tl.to(box.right.rotation, { z: Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.2);
+  // Right falls outward (z: -PI/2 makes mesh fall to world right)
+  tl.to(box.right.rotation, { z: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.2);
 
   // Back falls backward
   tl.to(box.back.rotation, { x: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.4);

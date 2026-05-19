@@ -20,7 +20,6 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   let boostCharge = 1.0;
   let boostIntensity = 0;
   let boostCooldown = 0;
-  let boostCooldownTriggered = false;
   let jumpConsumed = false;
 
   function tick(dt: number, input: InputState): void {
@@ -37,27 +36,25 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     // 5. Dead zone
     if (Math.abs(velocity) < 0.01) velocity = 0;
 
-    // Boost cooldown (can't activate during cooldown)
+    // Boost: simple drain/recharge with cooldown
     if (boostCooldown > 0) {
+      // Cooling down — can't boost, charge recharges
       boostCooldown = Math.max(0, boostCooldown - dt);
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
-      if (boostCooldown <= 0) boostCooldownTriggered = false; // auto-reset when cooldown expires
-    } else if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE && !boostCooldownTriggered) {
+    } else if (input.boost && boostCharge > 0) {
+      // Boosting — drain charge
       boostActive = true;
       boostCharge = Math.max(0, boostCharge - CONFIG.BOOST_DRAIN_RATE * dt);
-      // Trigger cooldown when charge gets low
-      if (boostCharge <= CONFIG.BOOST_MIN_ACTIVATE) {
+      if (boostCharge <= 0) {
+        // Depleted — enter cooldown
         boostActive = false;
-        boostCharge = 0;
         boostCooldown = CONFIG.BOOST_COOLDOWN_TIME;
-        boostCooldownTriggered = true;
       }
     } else {
+      // Not boosting — recharge
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
-      // Reset cooldown trigger once player releases boost key
-      if (!input.boost) boostCooldownTriggered = false;
     }
 
     // Boost intensity ramps up while active, drops when released
@@ -155,7 +152,6 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     boostCharge = 1.0;
     boostIntensity = 0;
     boostCooldown = 0;
-    boostCooldownTriggered = false;
     jumpConsumed = false;
     car.group.position.set(0, getHeightAt(0, 0), 0);
     car.group.rotation.set(0, 0, 0);

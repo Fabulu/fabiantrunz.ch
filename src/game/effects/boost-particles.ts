@@ -13,6 +13,7 @@ export interface BoostParticles {
 }
 
 const PARTICLE_COUNT = 60;
+const OFFSCREEN_Y = -500; // hide dead particles far below
 
 export function createBoostParticles(scene: Scene): BoostParticles {
   const positions = new Float32Array(PARTICLE_COUNT * 3);
@@ -20,7 +21,11 @@ export function createBoostParticles(scene: Scene): BoostParticles {
   const lives = new Float32Array(PARTICLE_COUNT);
   const maxLives = new Float32Array(PARTICLE_COUNT);
 
+  // Initialize ALL particles off-screen so they're invisible when dead
   lives.fill(0);
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    positions[i * 3 + 1] = OFFSCREEN_Y;
+  }
 
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(positions, 3));
@@ -42,37 +47,40 @@ export function createBoostParticles(scene: Scene): BoostParticles {
     const cosH = Math.cos(heading);
     const sinH = Math.sin(heading);
 
-    // Scale particle size with intensity (0.4 at low, 0.8 at max)
     material.size = 0.4 + intensity * 0.4;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const i3 = i * 3;
 
       if (lives[i] <= 0) {
+        // Dead particle — hide off-screen
+        positions[i3 + 1] = OFFSCREEN_Y;
+
         if (active) {
-          const spread = (Math.random() - 0.5) * 0.5;
-          const spreadY = (Math.random() - 0.5) * 0.4;
-
-          // Spawn at two exhaust points on either side of the car rear
+          // Respawn at exhaust points on sides of car
           const side = (Math.random() > 0.5 ? 1 : -1) * 0.5;
-          // perpendicular to heading: (-sinH, cosH) is the right vector
-          positions[i3] = carGroup.position.x - cosH * 1.5 + (-sinH) * side + spread;
-          positions[i3 + 1] = carGroup.position.y + 0.2 + spreadY;
-          positions[i3 + 2] = carGroup.position.z - sinH * 1.5 + cosH * side + spread;
+          const spread = (Math.random() - 0.5) * 0.3;
 
-          // Velocity: mostly sideways + upward, small backward component
-          // This keeps particles VISIBLE from chase cam instead of flying into it
-          const speed = (2 + Math.random() * 3) * (0.5 + intensity * 0.5);
-          const sideSpeed = (3 + Math.random() * 4) * (0.5 + intensity * 0.5);
-          velocities[i3] = -cosH * speed + (-sinH) * (Math.random() - 0.5) * sideSpeed;
-          velocities[i3 + 1] = 2.0 + Math.random() * 3.0; // strong upward
-          velocities[i3 + 2] = -sinH * speed + cosH * (Math.random() - 0.5) * sideSpeed;
+          // Perpendicular to heading for side offset
+          const perpX = -sinH;
+          const perpZ = cosH;
 
-          // Longer life at higher intensity
+          positions[i3] = carGroup.position.x - cosH * 1.5 + perpX * side + spread;
+          positions[i3 + 1] = carGroup.position.y + 0.2 + (Math.random() - 0.5) * 0.3;
+          positions[i3 + 2] = carGroup.position.z - sinH * 1.5 + perpZ * side + spread;
+
+          // Velocity: mostly sideways + upward, small backward
+          const backSpeed = (1 + Math.random() * 2) * (0.5 + intensity * 0.5);
+          const sideSpeed = (2 + Math.random() * 3) * (0.5 + intensity * 0.5);
+          velocities[i3] = -cosH * backSpeed + perpX * (Math.random() - 0.5) * sideSpeed;
+          velocities[i3 + 1] = 2.0 + Math.random() * 3.0;
+          velocities[i3 + 2] = -sinH * backSpeed + perpZ * (Math.random() - 0.5) * sideSpeed;
+
           maxLives[i] = 0.4 + Math.random() * 0.4 + intensity * 0.3;
           lives[i] = maxLives[i];
         }
       } else {
+        // Living particle — advance
         positions[i3] += velocities[i3] * dt;
         positions[i3 + 1] += velocities[i3 + 1] * dt;
         positions[i3 + 2] += velocities[i3 + 2] * dt;
@@ -80,8 +88,7 @@ export function createBoostParticles(scene: Scene): BoostParticles {
       }
     }
 
-    const posAttr = geometry.getAttribute('position');
-    posAttr.needsUpdate = true;
+    geometry.getAttribute('position').needsUpdate = true;
   }
 
   function dispose(): void {

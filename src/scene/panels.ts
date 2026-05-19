@@ -21,7 +21,11 @@ export async function createPanels(
   scene: THREE.Scene,
   theme: 'light' | 'dark',
 ): Promise<PanelData[]> {
-  const iconMap = await preloadIcons(projects);
+  // Load icons + about photo in PARALLEL (was sequential — caused 2s freeze)
+  const [iconMap, aboutTexturePromise] = await Promise.all([
+    preloadIcons(projects),
+    createAboutTexture(theme),
+  ]);
   cachedIconMap = iconMap;
 
   // Circle panel — CircleGeometry (front face with proper UVs)
@@ -153,7 +157,7 @@ export async function createPanels(
   }
 
   // About panel — floating below the project arc
-  const aboutTexture = await createAboutTexture(theme);
+  const aboutTexture = aboutTexturePromise;
   const aboutMaterial = new THREE.MeshPhysicalMaterial({
     map: aboutTexture,
     color: 0xffffff,

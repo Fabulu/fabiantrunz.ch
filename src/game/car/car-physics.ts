@@ -66,9 +66,13 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       boostIntensity = Math.max(0, boostIntensity - 2.0 * dt);
     }
 
-    // Speed scales with intensity
+    // Speed scales with intensity — both max speed AND acceleration increase
     const effectiveMultiplier = 1.0 + (CONFIG.BOOST_MULTIPLIER - 1.0) * boostIntensity;
     const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * effectiveMultiplier : CONFIG.MAX_SPEED;
+    // Boost actively pushes car faster (not just raising the cap)
+    if (boostActive && boostIntensity > 0) {
+      velocity += CONFIG.ACCELERATION * effectiveMultiplier * boostIntensity * dt;
+    }
 
     // 6. Clamp speed
     velocity = Math.max(-effectiveMaxSpeed / 3, Math.min(effectiveMaxSpeed, velocity));

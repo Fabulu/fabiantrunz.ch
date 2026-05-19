@@ -43,7 +43,7 @@ export async function enterDrivingMode(
 
   // Snap camera to gallery base (remove parallax offset)
   camera.position.set(0, 0.3, 4.5);
-  camera.lookAt(0, 0, 0);
+  camera.lookAt(0, 0.3, 0); // match gallery lookAt (0, camHeight, 0)
 
   // UI
   ui.onExitClick(onExit);
@@ -84,7 +84,7 @@ export async function enterDrivingMode(
   // No arc needed — pure Z pullback. No lookAt axis crossing.
 
   // Smooth lookAt interpolation (gallery target → car target)
-  const lookTarget = new THREE.Vector3(0, 0, 0); // starts at gallery lookAt
+  const lookTarget = new THREE.Vector3(0, 0.3, 0); // starts at gallery lookAt
 
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });

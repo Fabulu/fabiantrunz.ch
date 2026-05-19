@@ -37,7 +37,7 @@ const LANDSCAPE_POSITIONS: [number, number, number][] = [
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {
   const aspect = w / h;
-  if (w < 900 && aspect < 0.9) return 'portrait';
+  if (aspect < 1.0) return 'portrait'; // any tall/narrow viewport (includes rotated monitors)
   if (h < 500) return 'landscape-mobile';
   return 'desktop';
 }
@@ -73,8 +73,9 @@ function applyLayout(
     aboutScale = 0.65;
   } else {
     positions = DESKTOP_POSITIONS;
-    fov = 50;
-    camPos = [0, 1.8, 4.5]; // original 0.3 + 1.5 (same offset from cards as original)
+    // Widen FOV for narrow aspects (4:3 tablets) so outer cards aren't clipped
+    fov = aspect < 1.5 ? 60 : 50;
+    camPos = [0, 1.8, 4.5];
     panelScale = 1.0;
     aboutScale = 0.85;
   }

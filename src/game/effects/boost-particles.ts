@@ -12,7 +12,7 @@ export interface BoostParticles {
 }
 
 const FIRE_COUNT = 60;
-const SMOKE_COUNT = 20;
+const SMOKE_COUNT = 40;
 const HIDE_Y = -500;
 
 export function createBoostParticles(scene: Scene): BoostParticles {

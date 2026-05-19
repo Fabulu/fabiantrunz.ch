@@ -39,7 +39,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   leftMesh.rotation.y = Math.PI / 2;
   leftMesh.position.y = 5;
   const left = new THREE.Group();
-  left.position.set(-15, 0.15, 6);
+  left.position.set(-11, 0.15, 6);
   left.add(leftMesh);
   scene.add(left);
   track(leftGeo, leftMat);
@@ -51,13 +51,13 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   rightMesh.rotation.y = -Math.PI / 2;
   rightMesh.position.y = 5;
   const right = new THREE.Group();
-  right.position.set(15, 0.15, 6);
+  right.position.set(11, 0.15, 6);
   right.add(rightMesh);
   scene.add(right);
   track(rightGeo, rightMat);
 
   // BACK wall — pivot at bottom, faces +Z
-  const backGeo = new THREE.PlaneGeometry(30, 10);
+  const backGeo = new THREE.PlaneGeometry(60, 10); // wide enough for ultrawide
   const backMat = wallMat(wallColor);
   const backMesh = new THREE.Mesh(backGeo, backMat);
   backMesh.position.y = 5;
@@ -68,7 +68,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   track(backGeo, backMat);
 
   // TOP
-  const topGeo = new THREE.PlaneGeometry(30, 28);
+  const topGeo = new THREE.PlaneGeometry(60, 28);
   const topMat = wallMat(wallColor);
   const top = new THREE.Mesh(topGeo, topMat);
   top.position.set(0, 10, 6);
@@ -77,7 +77,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   track(topGeo, topMat);
 
   // FRONT — behind chase cam (Z=20), fades
-  const frontGeo = new THREE.PlaneGeometry(30, 10);
+  const frontGeo = new THREE.PlaneGeometry(60, 10);
   const frontMat = wallMat(wallColor);
   const front = new THREE.Mesh(frontGeo, frontMat);
   front.position.set(0, 5, 20);
@@ -86,7 +86,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   track(frontGeo, frontMat);
 
   // FLOOR — Y=0.1 (terrain is flat at origin)
-  const floorGeo = new THREE.PlaneGeometry(34, 32);
+  const floorGeo = new THREE.PlaneGeometry(64, 32);
   const floorMat = wallMat(wallColor);
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.position.set(0, 0.15, 6);

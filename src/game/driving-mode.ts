@@ -111,7 +111,7 @@ export async function enterDrivingMode(
 
     // Smooth lookAt: gentle tilt toward car (less dramatic downward angle)
     master.to(lookTarget, {
-      y: 1.5,
+      y: 1.75,
       z: 8,
       duration: 3.0,
       ease: 'power1.inOut',

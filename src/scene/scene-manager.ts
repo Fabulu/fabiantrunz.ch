@@ -13,26 +13,26 @@ import type { DrivingUI } from '../components/driving-ui';
 import { t } from '../i18n';
 
 // Responsive layout positions
-// All cards EXCEPT about lifted +1.5. Camera lifted +1.5 to match.
-// About card at ORIGINAL position. Visual result: everything looks
-// identical to the original, but in 3D mode all cards are above ground.
+// ALL cards (including about) lifted +1.5 from originals. Camera also +1.5.
+// Gallery looks identical to original — just everything is higher in world space
+// so nothing clips through the ground in 3D mode.
 const DESKTOP_POSITIONS: [number, number, number][] = [
   [-3.0, 1.7, 0.2], [-1.8, 1.75, 0.072], [-0.6, 1.72, 0.008],
   [0.6, 1.77, 0.008], [1.8, 1.71, 0.072], [3.0, 1.74, 0.2],
-  [0, -0.85, 0.1], // about: ORIGINAL, untouched
+  [0, 0.65, 0.1], // about: -0.85 + 1.5
 ];
 
 const PORTRAIT_POSITIONS: [number, number, number][] = [
   [-0.8, 3.3, 0], [0.8, 3.3, 0],
   [-0.8, 2.05, 0], [0.8, 2.05, 0],
   [-0.8, 0.8, 0], [0.8, 0.8, 0],
-  [0, -1.8, 0], // about: ORIGINAL, untouched
+  [0, -0.3, 0], // about: -1.8 + 1.5
 ];
 
 // Landscape mobile positions: two rows (about is last = index 6)
 const LANDSCAPE_POSITIONS: [number, number, number][] = [
   [-1.8, 2.05, 0], [-0.6, 2.05, 0], [0.6, 2.05, 0], [1.8, 2.05, 0],
-  [-1.2, 0.95, 0], [0, 0.95, 0], [1.2, -0.05, 0], // about: adjusted for landscape cam
+  [-1.2, 0.95, 0], [0, 0.95, 0], [1.2, 0.95, 0], // about: -0.55 + 1.5
 ];
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {
@@ -62,19 +62,19 @@ function applyLayout(
   if (mode === 'portrait') {
     positions = PORTRAIT_POSITIONS;
     fov = 70;
-    camPos = [0, 1.5, 5.0]; // original 0 + 1.5
+    camPos = [0, 2.0, 5.0]; // original 0 + 2.0
     panelScale = 0.65;
     aboutScale = 0.6;
   } else if (mode === 'landscape-mobile') {
     positions = LANDSCAPE_POSITIONS;
     fov = 50;
-    camPos = [0, 1.5, 3.5]; // original 0 + 1.5
+    camPos = [0, 2.0, 3.5]; // original 0 + 2.0
     panelScale = 0.7;
     aboutScale = 0.65;
   } else {
     positions = DESKTOP_POSITIONS;
     fov = 50;
-    camPos = [0, 1.8, 4.5]; // original 0.3 + 1.5
+    camPos = [0, 2.3, 4.5]; // original 0.3 + 2.0
     panelScale = 1.0;
     aboutScale = 0.85;
   }
@@ -203,9 +203,9 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   const width = container.clientWidth;
   const height = container.clientHeight;
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-  const cameraBasePosition = new THREE.Vector3(0, 1.8, 4.5);
+  const cameraBasePosition = new THREE.Vector3(0, 2.3, 4.5);
   camera.position.copy(cameraBasePosition);
-  camera.lookAt(0, 1.8, 0);
+  camera.lookAt(0, 2.3, 0);
 
   // 3. Scene
   const scene = new THREE.Scene();

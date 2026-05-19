@@ -41,8 +41,8 @@ export async function enterDrivingMode(
 ): Promise<DrivingMode> {
   setMode('transitioning');
 
-  // DON'T snap — start GSAP from wherever the camera currently is
-  // (includes parallax offset, which GSAP will smoothly animate away from)
+  // Force dark background for the box illusion (even in light mode)
+  scene.background = new THREE.Color(0x050508);
 
   // UI
   ui.onExitClick(onExit);
@@ -70,6 +70,22 @@ export async function enterDrivingMode(
 
   // Driving lights early
   const drivingLights = createDrivingLighting(scene);
+
+  // Create world objects BEFORE transition so they appear with terrain (no pop-in)
+  const boostParticles = createBoostParticles(scene);
+  const carCollider = createCarCollider(preloadedAssets.physics);
+  const rocks = createRocks(scene, preloadedAssets.physics);
+  const buildings = createBuildings(scene);
+  const props = createZoneProps(scene);
+  const obstacleSystem = createObstacleSystem([
+    { center: { x: 50, z: 0 }, radius: 2.0 },
+    { center: { x: 55, z: 5 }, radius: 2.0 },
+    { center: { x: 35, z: -40 }, radius: 2.5 },
+    { center: { x: -35, z: -40 }, radius: 2.5 },
+    { center: { x: -50, z: 0 }, radius: 2.0 },
+    { center: { x: 0, z: 50 }, radius: 1.5 },
+  ]);
+  const proximity = createProximitySystem(buildings);
 
   // ─── Cinematic transition ────────────────────────────────────────
   // Camera starts at gallery (0, 0.3, 4.5) looking at (0, 0, 0).
@@ -132,30 +148,6 @@ export async function enterDrivingMode(
 
   // Car physics — inits from car.group.position (no teleport)
   const carPhysics = createCarPhysics(car);
-
-  // Boost exhaust particles
-  const boostParticles = createBoostParticles(scene);
-
-  // Rapier bodies
-  const carCollider = createCarCollider(preloadedAssets.physics);
-  const rocks = createRocks(scene, preloadedAssets.physics);
-
-  // Buildings + props
-  const buildings = createBuildings(scene);
-  const props = createZoneProps(scene);
-
-  // Obstacle collisions (buildings only for now)
-  const obstacleSystem = createObstacleSystem([
-    { center: { x: 50, z: 0 }, radius: 2.0 },    // Pagoda
-    { center: { x: 55, z: 5 }, radius: 2.0 },    // Pavilion
-    { center: { x: 35, z: -40 }, radius: 2.5 },   // Observatory
-    { center: { x: -35, z: -40 }, radius: 2.5 },  // Lab
-    { center: { x: -50, z: 0 }, radius: 2.0 },    // Tower
-    { center: { x: 0, z: 50 }, radius: 1.5 },     // Game Table
-  ]);
-
-  // Proximity
-  const proximity = createProximitySystem(buildings);
 
   // Input
   const isTouch = 'ontouchstart' in window;

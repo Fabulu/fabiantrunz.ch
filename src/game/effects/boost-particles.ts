@@ -37,6 +37,7 @@ export function createBoostParticles(scene: Scene): BoostParticles {
   });
 
   const pts = new Points(geo, mat);
+  pts.frustumCulled = false; // positions are dynamic — don't cull based on initial bounding sphere
   scene.add(pts);
 
   function tick(dt: number, car: Group, heading: number, active: boolean, intensity: number): void {

@@ -12,11 +12,13 @@ export interface BoxWalls {
 }
 
 function wallMat(color: number): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({
+  const m = new THREE.MeshBasicMaterial({
     color,
     side: THREE.DoubleSide,
     depthWrite: true,
   });
+  m.toneMapped = false; // bypass ACES tone mapping — keep pure white/black
+  return m;
 }
 
 /**

@@ -37,7 +37,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   leftMesh.rotation.y = Math.PI / 2;
   leftMesh.position.y = 5;
   const left = new THREE.Group();
-  left.position.set(-15, 0, 6);
+  left.position.set(-15, 0.15, 6);
   left.add(leftMesh);
   scene.add(left);
   track(leftGeo, leftMat);
@@ -49,7 +49,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   rightMesh.rotation.y = -Math.PI / 2;
   rightMesh.position.y = 5;
   const right = new THREE.Group();
-  right.position.set(15, 0, 6);
+  right.position.set(15, 0.15, 6);
   right.add(rightMesh);
   scene.add(right);
   track(rightGeo, rightMat);
@@ -60,7 +60,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   const backMesh = new THREE.Mesh(backGeo, backMat);
   backMesh.position.y = 5;
   const back = new THREE.Group();
-  back.position.set(0, 0, -8);
+  back.position.set(0, 0.15, -8);
   back.add(backMesh);
   scene.add(back);
   track(backGeo, backMat);
@@ -87,7 +87,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   const floorGeo = new THREE.PlaneGeometry(34, 32);
   const floorMat = wallMat();
   const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.position.set(0, 0.1, 6);
+  floor.position.set(0, 0.15, 6);
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
   track(floorGeo, floorMat);

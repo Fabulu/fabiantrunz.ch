@@ -54,14 +54,8 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Lift panels above floor. Save original Y for restore on exit.
-  const originalPanelY: number[] = [];
-  for (const item of floatState) {
-    originalPanelY.push(item.panel.basePosition.y);
-    const liftedY = Math.max(item.panel.basePosition.y, 0.8);
-    item.panel.mesh.position.y = liftedY;
-    item.panel.basePosition.y = liftedY;
-  }
+  // Panels stay exactly where they are in gallery — no lifting, no position changes
+  const originalPanelY: number[] = floatState.map(item => item.panel.basePosition.y);
 
   // Car spawns BEHIND the camera (Z=8). Camera at Z=4.5 can't see it yet.
   // rotation.y = PI/2 → rear faces +Z. heading = -PI/2 → car faces -Z.

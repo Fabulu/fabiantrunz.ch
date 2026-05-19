@@ -11,9 +11,9 @@ export interface BoxWalls {
   dispose(): void;
 }
 
-function wallMat(): THREE.MeshBasicMaterial {
+function wallMat(color: number): THREE.MeshBasicMaterial {
   return new THREE.MeshBasicMaterial({
-    color: 0x050508,
+    color,
     side: THREE.DoubleSide,
     depthWrite: true,
   });
@@ -25,14 +25,14 @@ function wallMat(): THREE.MeshBasicMaterial {
  * Chase cam settles at Z=16. Box: X=-15..+15, Y=0..+10, Z=-8..+20
  * Wall pivots at Y=0 so fallen walls rest on terrain (which is flat near origin).
  */
-export function createBoxWalls(scene: THREE.Scene): BoxWalls {
+export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508): BoxWalls {
   const geos: THREE.BufferGeometry[] = [];
   const mats: THREE.MeshBasicMaterial[] = [];
   function track(g: THREE.BufferGeometry, m: THREE.MeshBasicMaterial) { geos.push(g); mats.push(m); }
 
   // LEFT wall — pivot at bottom edge, no group rotation (mesh rotated inside)
   const leftGeo = new THREE.PlaneGeometry(28, 10);
-  const leftMat = wallMat();
+  const leftMat = wallMat(wallColor);
   const leftMesh = new THREE.Mesh(leftGeo, leftMat);
   leftMesh.rotation.y = Math.PI / 2;
   leftMesh.position.y = 5;
@@ -44,7 +44,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 
   // RIGHT wall
   const rightGeo = new THREE.PlaneGeometry(28, 10);
-  const rightMat = wallMat();
+  const rightMat = wallMat(wallColor);
   const rightMesh = new THREE.Mesh(rightGeo, rightMat);
   rightMesh.rotation.y = -Math.PI / 2;
   rightMesh.position.y = 5;
@@ -56,7 +56,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 
   // BACK wall — pivot at bottom, faces +Z
   const backGeo = new THREE.PlaneGeometry(30, 10);
-  const backMat = wallMat();
+  const backMat = wallMat(wallColor);
   const backMesh = new THREE.Mesh(backGeo, backMat);
   backMesh.position.y = 5;
   const back = new THREE.Group();
@@ -67,7 +67,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 
   // TOP
   const topGeo = new THREE.PlaneGeometry(30, 28);
-  const topMat = wallMat();
+  const topMat = wallMat(wallColor);
   const top = new THREE.Mesh(topGeo, topMat);
   top.position.set(0, 10, 6);
   top.rotation.x = Math.PI / 2;
@@ -76,7 +76,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 
   // FRONT — behind chase cam (Z=20), fades
   const frontGeo = new THREE.PlaneGeometry(30, 10);
-  const frontMat = wallMat();
+  const frontMat = wallMat(wallColor);
   const front = new THREE.Mesh(frontGeo, frontMat);
   front.position.set(0, 5, 20);
   front.rotation.y = Math.PI;
@@ -85,7 +85,7 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
 
   // FLOOR — Y=0.1 (terrain is flat at origin)
   const floorGeo = new THREE.PlaneGeometry(34, 32);
-  const floorMat = wallMat();
+  const floorMat = wallMat(wallColor);
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.position.set(0, 0.15, 6);
   floor.rotation.x = -Math.PI / 2;

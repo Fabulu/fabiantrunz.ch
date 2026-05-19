@@ -41,8 +41,7 @@ export async function enterDrivingMode(
 ): Promise<DrivingMode> {
   setMode('transitioning');
 
-  // Force dark background for the box illusion (even in light mode)
-  scene.background = new THREE.Color(0x050508);
+  // Don't change background — walls match the current theme background
 
   // UI
   ui.onExitClick(onExit);
@@ -65,8 +64,10 @@ export async function enterDrivingMode(
   car.group.visible = true;
   scene.add(car.group);
 
-  // Box enclosure (big enough for chase cam at Z=16)
-  const walls = createBoxWalls(scene);
+  // Box walls match current theme background (dark=0x050508, light=0xf5f5f8)
+  const isDark = document.documentElement.dataset.theme !== 'light';
+  const wallColor = isDark ? 0x050508 : 0xf5f5f8;
+  const walls = createBoxWalls(scene, wallColor);
 
   // Driving lights early
   const drivingLights = createDrivingLighting(scene);

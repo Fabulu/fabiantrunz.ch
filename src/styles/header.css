@@ -60,6 +60,11 @@
   }
 }
 
+/* Hide header in driving mode — exit button handles navigation */
+body.driving-mode .header {
+  display: none;
+}
+
 /* ── Controls ────────────────────────────────────────────── */
 
 .header__controls {

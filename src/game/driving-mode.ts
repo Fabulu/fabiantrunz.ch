@@ -109,9 +109,9 @@ export async function enterDrivingMode(
     const wallTl = createWallOpenTimeline(walls);
     master.add(wallTl, 1.0);
 
-    // Smooth lookAt: (0,0,0) → (0, 1, 8) over first 3s
+    // Smooth lookAt: gentle tilt toward car (less dramatic downward angle)
     master.to(lookTarget, {
-      y: 1,
+      y: 1.5,
       z: 8,
       duration: 3.0,
       ease: 'power1.inOut',

@@ -20,7 +20,7 @@ export function createLighting(
   // Gallery spotlight from above
   const spot = new THREE.SpotLight(0xffe4c4, 0.5);
   spot.position.set(0, 5, 3);
-  spot.target.position.set(0, 0, 0);
+  spot.target.position.set(0, 1.0, 0);
   spot.angle = Math.PI / 4;
   spot.penumbra = 0.6;
   spot.decay = 2;
@@ -29,17 +29,17 @@ export function createLighting(
 
   // Warm amber edge lights
   const edgeLightLeft = new THREE.PointLight(0xf59e0b, 0.3, 20);
-  edgeLightLeft.position.set(-5, 1, -2);
+  edgeLightLeft.position.set(-5, 2.5, -2);
   scene.add(edgeLightLeft);
 
   const edgeLightRight = new THREE.PointLight(0xf59e0b, 0.3, 20);
-  edgeLightRight.position.set(5, 1, -2);
+  edgeLightRight.position.set(5, 2.5, -2);
   scene.add(edgeLightRight);
 
   // Cursor-following light — bright, wide reach, no decay so it doesn't
   // fall off weirdly at the edges of the screen
   const cursorLight = new THREE.PointLight(0xffffff, 15, 6, 2);
-  cursorLight.position.set(0, 0.3, 4.0);
+  cursorLight.position.set(0, 1.8, 4.0);
   scene.add(cursorLight);
 
   scene.background = new THREE.Color(0x050508);

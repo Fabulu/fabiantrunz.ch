@@ -32,7 +32,7 @@ const PORTRAIT_POSITIONS: [number, number, number][] = [
 // Landscape mobile positions: two rows (about is last = index 6)
 const LANDSCAPE_POSITIONS: [number, number, number][] = [
   [-1.8, 2.05, 0], [-0.6, 2.05, 0], [0.6, 2.05, 0], [1.8, 2.05, 0],
-  [-1.2, 0.95, 0], [0, 0.95, 0], [1.2, -0.55, 0], // last is about: ORIGINAL
+  [-1.2, 0.95, 0], [0, 0.95, 0], [1.2, -0.05, 0], // about: adjusted for landscape cam
 ];
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {

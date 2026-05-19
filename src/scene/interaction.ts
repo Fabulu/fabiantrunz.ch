@@ -357,7 +357,7 @@ export function setupInteraction(
       const targetY = cameraBasePosition.y + mouse.y * 0.08;
       camera.position.x += (targetX - camera.position.x) * 0.03;
       camera.position.y += (targetY - camera.position.y) * 0.03;
-      camera.lookAt(0, 0, 0);
+      camera.lookAt(0, cameraBasePosition.y, 0);
     }
   }
 

@@ -34,7 +34,7 @@ export async function enterDrivingMode(
   camera: THREE.PerspectiveCamera,
   _renderer: THREE.WebGLRenderer,
   panels: PanelData[],
-  galleryLightingRig: LightingRig,
+  _galleryLightingRig: LightingRig,
   preloadedAssets: PreloadedAssets,
   onExit: () => void,
   ui: DrivingUI,

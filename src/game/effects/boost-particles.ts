@@ -53,16 +53,20 @@ export function createBoostParticles(scene: Scene): BoostParticles {
           const spread = (Math.random() - 0.5) * 0.5;
           const spreadY = (Math.random() - 0.5) * 0.4;
 
-          // Spawn behind car (offset by heading) — further back so visible
-          positions[i3] = carGroup.position.x - cosH * 2.0 + spread;
-          positions[i3 + 1] = carGroup.position.y + 0.3 + spreadY;
-          positions[i3 + 2] = carGroup.position.z - sinH * 2.0 + spread;
+          // Spawn at two exhaust points on either side of the car rear
+          const side = (Math.random() > 0.5 ? 1 : -1) * 0.5;
+          // perpendicular to heading: (-sinH, cosH) is the right vector
+          positions[i3] = carGroup.position.x - cosH * 1.5 + (-sinH) * side + spread;
+          positions[i3 + 1] = carGroup.position.y + 0.2 + spreadY;
+          positions[i3 + 2] = carGroup.position.z - sinH * 1.5 + cosH * side + spread;
 
-          // Velocity: fast backward + wide spread + upward drift
-          const speed = (6 + Math.random() * 4) * (0.5 + intensity * 0.5);
-          velocities[i3] = -cosH * speed + (Math.random() - 0.5) * 3.0;
-          velocities[i3 + 1] = 1.0 + Math.random() * 2.0; // always drift up
-          velocities[i3 + 2] = -sinH * speed + (Math.random() - 0.5) * 3.0;
+          // Velocity: mostly sideways + upward, small backward component
+          // This keeps particles VISIBLE from chase cam instead of flying into it
+          const speed = (2 + Math.random() * 3) * (0.5 + intensity * 0.5);
+          const sideSpeed = (3 + Math.random() * 4) * (0.5 + intensity * 0.5);
+          velocities[i3] = -cosH * speed + (-sinH) * (Math.random() - 0.5) * sideSpeed;
+          velocities[i3 + 1] = 2.0 + Math.random() * 3.0; // strong upward
+          velocities[i3 + 2] = -sinH * speed + cosH * (Math.random() - 0.5) * sideSpeed;
 
           // Longer life at higher intensity
           maxLives[i] = 0.4 + Math.random() * 0.4 + intensity * 0.3;

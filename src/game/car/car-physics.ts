@@ -42,6 +42,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
       boostCooldown = Math.max(0, boostCooldown - dt);
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
+      if (boostCooldown <= 0) boostCooldownTriggered = false; // auto-reset when cooldown expires
     } else if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE && !boostCooldownTriggered) {
       boostActive = true;
       boostCharge = Math.max(0, boostCharge - CONFIG.BOOST_DRAIN_RATE * dt);

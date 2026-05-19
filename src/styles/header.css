@@ -31,14 +31,33 @@
 /* ── Logo ────────────────────────────────────────────────── */
 
 .header__logo {
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
   color: var(--color-text-primary);
   transition: color var(--transition-fast);
 }
 
 .header__logo:hover {
   color: var(--color-accent);
+}
+
+.header__name {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  white-space: nowrap;
+}
+
+.header__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .header__subtitle {
+    display: none;
+  }
 }
 
 /* ── Controls ────────────────────────────────────────────── */

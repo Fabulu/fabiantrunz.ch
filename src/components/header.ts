@@ -81,11 +81,27 @@ export function createHeader(): HTMLElement {
   const inner = document.createElement('div');
   inner.className = 'header__inner';
 
-  // Logo
+  // Logo + subtitle
   const logo = document.createElement('a');
   logo.href = 'javascript:void(0)';
   logo.className = 'header__logo';
-  logo.textContent = 'FT';
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'header__name';
+  nameSpan.textContent = 'Fabian Trunz';
+
+  const subtitleSpan = document.createElement('span');
+  subtitleSpan.className = 'header__subtitle';
+  function updateSubtitle() {
+    const lang = getCurrentLang();
+    subtitleSpan.textContent = lang === 'de'
+      ? 'BSc Informatik \u00b7 Softwareentwickler, Delemed AG'
+      : 'BSc Computer Science \u00b7 Software Developer, Delemed AG';
+  }
+  updateSubtitle();
+
+  logo.appendChild(nameSpan);
+  logo.appendChild(subtitleSpan);
 
   // Controls
   const controls = document.createElement('div');
@@ -115,6 +131,7 @@ export function createHeader(): HTMLElement {
     const newLang = getCurrentLang() === 'de' ? 'en' : 'de';
     setLang(newLang);
     langBtn.textContent = newLang.toUpperCase();
+    updateSubtitle();
     document.dispatchEvent(new CustomEvent('lang-changed'));
   });
 

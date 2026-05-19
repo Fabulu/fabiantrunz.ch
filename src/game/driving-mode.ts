@@ -66,7 +66,7 @@ export async function enterDrivingMode(
 
   // Box walls match current theme background (dark=0x050508, light=0xf5f5f8)
   const isDark = document.documentElement.dataset.theme !== 'light';
-  const wallColor = isDark ? 0x050508 : 0xffffff;
+  const wallColor = isDark ? 0x050508 : 0xf5f5f8; // match scene background exactly
   const walls = createBoxWalls(scene, wallColor);
 
   // Driving lights early

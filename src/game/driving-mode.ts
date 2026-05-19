@@ -62,14 +62,13 @@ export async function enterDrivingMode(
     item.panel.basePosition.y = liftedY;
   }
 
-  // Car spawns in front of panels, pulled back (Z=1), rear facing camera
-  // rotation.y = PI/2 → car model front (+X) faces -Z, rear faces +Z (toward camera)
-  // heading = -rotation.y = -PI/2
-  // Chase cam at heading=-PI/2: (car.x, Y, car.z + 8) — behind car in +Z
-  const carY = getHeightAt(0, 1);
+  // Car spawns between camera and panels, closer to camera (Z=3)
+  // rotation.y = PI/2 → rear faces camera at +Z
+  // Chase cam at heading=-PI/2: (car.x, Y, car.z + 8) = (0, Y, 11)
+  const carY = getHeightAt(0, 3);
   const car = preloadedAssets.car;
-  car.group.position.set(0, Math.max(carY, 0.3), 1);
-  car.group.rotation.y = Math.PI / 2; // rear faces camera
+  car.group.position.set(0, Math.max(carY, 0.3), 3);
+  car.group.rotation.y = Math.PI / 2;
   car.group.visible = true;
   scene.add(car.group);
 
@@ -91,17 +90,17 @@ export async function enterDrivingMode(
     // Sound
     master.call(() => audio.playEffect('box-open'), undefined, 0.3);
 
-    // Walls slide away slowly (starts at 0.5s, takes 4.5s)
-    const wallTl = createWallOpenTimeline(walls, scene);
+    // Walls fall on hinges (starts at 0.5s)
+    const wallTl = createWallOpenTimeline(walls);
     master.add(wallTl, 0.5);
 
-    // Phase 1 (0-2.5s): Camera pulls BACK to reveal car + scene
-    // From gallery (0, 0.3, 4.5) to (0, 2.5, 8)
+    // Phase 1 (0-3s): Camera pulls BACK to reveal car
+    // From gallery (0, 0.3, 4.5) to (0, 3, 11) — chase cam will be at Z=11
     master.to(camera.position, {
       x: 0,
-      y: 2.5,
-      z: 8,
-      duration: 2.5,
+      y: 3,
+      z: 11,
+      duration: 3.0,
       ease: 'power1.inOut',
       onUpdate: () => camera.lookAt(carPos.x, carPos.y + 0.5, carPos.z),
     }, 0);
@@ -124,8 +123,8 @@ export async function enterDrivingMode(
     }, undefined, 2.0);
 
     // Phase 3 (4.0-5.5s): Camera settles to chase position
-    // Car at (0, carY, 1) facing -Z. Chase cam at heading=-PI/2: (0, carY+4, 1+8) = (0, carY+4, 9)
-    // Camera is already at (0, 2.5, 8) — just drift to (0, carY+4, 9). No arc needed!
+    // Car at Z=3, chase cam at Z=3+8=11. Camera already pulled to Z=11.
+    // Just adjust Y to chase height.
     master.to(camera.position, {
       x: 0,
       y: carPos.y + 4,
@@ -134,9 +133,6 @@ export async function enterDrivingMode(
       ease: 'power2.inOut',
       onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
     }, 4.0);
-
-    // Dispose walls after they've fallen
-    master.call(() => walls.dispose(), undefined, 8.0);
   });
 
   // Car physics — inits from car.group.position (no teleport)
@@ -195,7 +191,7 @@ export async function enterDrivingMode(
     // Track if car has moved from spawn (for panel scatter gate)
     if (!carHasMoved) {
       const dx = state.position.x - 0;
-      const dz = state.position.z - 1; // car starts at Z=1
+      const dz = state.position.z - 3; // car starts at Z=3
       if (dx * dx + dz * dz > 9) carHasMoved = true; // moved 3+ units from spawn
     }
 

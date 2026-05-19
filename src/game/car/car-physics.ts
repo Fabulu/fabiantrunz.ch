@@ -18,7 +18,8 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
   let isAirborne = false;
   let boostActive = false;
   let boostCharge = 1.0;
-  let boostIntensity = 0; // ramps 0→1 while boosting
+  let boostIntensity = 0;
+  let boostCooldown = 0; // cooldown when charge hits 0
   let jumpConsumed = false;
 
   function tick(dt: number, input: InputState): void {
@@ -35,11 +36,19 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     // 5. Dead zone
     if (Math.abs(velocity) < 0.01) velocity = 0;
 
-    // Boost logic — hold to drain, release to recharge
-    if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE) {
+    // Boost cooldown (can't activate during cooldown)
+    if (boostCooldown > 0) {
+      boostCooldown = Math.max(0, boostCooldown - dt);
+      boostActive = false;
+      boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
+    } else if (input.boost && boostCharge > CONFIG.BOOST_MIN_ACTIVATE) {
       boostActive = true;
       boostCharge = Math.max(0, boostCharge - CONFIG.BOOST_DRAIN_RATE * dt);
-      if (boostCharge <= 0) boostActive = false;
+      // Trigger cooldown when charge depleted
+      if (boostCharge <= 0) {
+        boostActive = false;
+        boostCooldown = CONFIG.BOOST_COOLDOWN_TIME;
+      }
     } else {
       boostActive = false;
       boostCharge = Math.min(1, boostCharge + CONFIG.BOOST_RECHARGE_RATE * dt);
@@ -47,12 +56,12 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
 
     // Boost intensity ramps up while active, drops when released
     if (boostActive) {
-      boostIntensity = Math.min(1, boostIntensity + 0.5 * dt); // reaches 1.0 in 2s
+      boostIntensity = Math.min(1, boostIntensity + 0.4 * dt); // reaches 1.0 in 2.5s
     } else {
-      boostIntensity = Math.max(0, boostIntensity - 2.0 * dt); // drops in 0.5s
+      boostIntensity = Math.max(0, boostIntensity - 2.0 * dt);
     }
 
-    // Effective speed scales with intensity (gradual ramp, not instant 3x)
+    // Speed scales with intensity
     const effectiveMultiplier = 1.0 + (CONFIG.BOOST_MULTIPLIER - 1.0) * boostIntensity;
     const effectiveMaxSpeed = boostActive ? CONFIG.MAX_SPEED * effectiveMultiplier : CONFIG.MAX_SPEED;
 

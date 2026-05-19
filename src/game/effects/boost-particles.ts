@@ -53,16 +53,16 @@ export function createBoostParticles(scene: Scene): BoostParticles {
           const spread = (Math.random() - 0.5) * 0.5;
           const spreadY = (Math.random() - 0.5) * 0.4;
 
-          // Spawn behind car (offset by heading)
-          positions[i3] = carGroup.position.x - cosH * 1.5 + spread;
+          // Spawn behind car (offset by heading) — further back so visible
+          positions[i3] = carGroup.position.x - cosH * 2.0 + spread;
           positions[i3 + 1] = carGroup.position.y + 0.3 + spreadY;
-          positions[i3 + 2] = carGroup.position.z - sinH * 1.5 + spread;
+          positions[i3 + 2] = carGroup.position.z - sinH * 2.0 + spread;
 
-          // Velocity scales with intensity (faster particles at higher boost)
-          const speed = (3 + Math.random() * 2) * (0.5 + intensity * 0.5);
-          velocities[i3] = -cosH * speed + (Math.random() - 0.5) * 0.8;
-          velocities[i3 + 1] = (Math.random() - 0.5) * 0.5;
-          velocities[i3 + 2] = -sinH * speed + (Math.random() - 0.5) * 0.8;
+          // Velocity: fast backward + wide spread + upward drift
+          const speed = (6 + Math.random() * 4) * (0.5 + intensity * 0.5);
+          velocities[i3] = -cosH * speed + (Math.random() - 0.5) * 3.0;
+          velocities[i3 + 1] = 1.0 + Math.random() * 2.0; // always drift up
+          velocities[i3 + 2] = -sinH * speed + (Math.random() - 0.5) * 3.0;
 
           // Longer life at higher intensity
           maxLives[i] = 0.4 + Math.random() * 0.4 + intensity * 0.3;

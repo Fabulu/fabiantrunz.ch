@@ -106,26 +106,10 @@ export function createCar(color?: number): CarObject {
     [-1.0, 0.35, -0.7], // RR
   ];
 
-  // Tire texture — alternating dark/light bands for visible spin
-  const tireCanvas = document.createElement('canvas');
-  tireCanvas.width = 64;
-  tireCanvas.height = 64;
-  const tireCtx = tireCanvas.getContext('2d')!;
-  // Dark rubber base
-  tireCtx.fillStyle = '#1a1a1a';
-  tireCtx.fillRect(0, 0, 64, 64);
-  // Tread lines (lighter bands)
-  tireCtx.fillStyle = '#333333';
-  for (let i = 0; i < 8; i++) {
-    tireCtx.fillRect(0, i * 16, 64, 6);
-  }
-  const tireTex = new THREE.CanvasTexture(tireCanvas);
-  tireTex.wrapS = THREE.RepeatWrapping;
-  tireTex.wrapT = THREE.RepeatWrapping;
-  tireTex.repeat.set(1, 3);
-
-  const tireMat = new THREE.MeshLambertMaterial({ map: tireTex });
-  const rimMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
+  // Octagonal tires — 8 sides so rotation is clearly visible
+  const tireMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  const rimMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
+  const hubMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
 
   const wheels: THREE.Group[] = [];
   const frontWheels: THREE.Group[] = [];
@@ -133,16 +117,21 @@ export function createCar(color?: number): CarObject {
   for (let i = 0; i < wheelPositions.length; i++) {
     const [wx, wy, wz] = wheelPositions[i];
 
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.28, 10), tireMat);
+    // 8-sided tire (octagonal) — rotation is visually obvious
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.28, 8), tireMat);
     tire.rotation.x = Math.PI / 2;
 
-    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 6), rimMat);
+    // Rim with contrasting hub — 4 sides so spokes are visible during spin
+    const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.3, 4), rimMat);
     rim.rotation.x = Math.PI / 2;
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.32, 6), hubMat);
+    hub.rotation.x = Math.PI / 2;
 
     // wheelGroup holds tire+rim — spin is applied here (rotation.z)
     const wheelGroup = new THREE.Group();
     wheelGroup.add(tire);
     wheelGroup.add(rim);
+    wheelGroup.add(hub);
 
     // pivot is positioned — steering applied here (rotation.y) for front wheels only
     const pivot = new THREE.Group();

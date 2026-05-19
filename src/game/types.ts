@@ -39,6 +39,7 @@ export interface GameConfig {
   BOOST_DRAIN_RATE: number;
   BOOST_RECHARGE_RATE: number;
   BOOST_MIN_ACTIVATE: number;
+  BOOST_COOLDOWN_TIME: number;
   JUMP_FORCE: number;
   GRAVITY: number;
   BOOST_FOV: number;
@@ -52,9 +53,10 @@ export const CONFIG: GameConfig = {
   TURN_RATE: 2.5,
   WHEEL_BASE: 2.0,
   BOOST_MULTIPLIER: 3.0,
-  BOOST_DRAIN_RATE: 0.4,
-  BOOST_RECHARGE_RATE: 0.25,
+  BOOST_DRAIN_RATE: 0.2,
+  BOOST_RECHARGE_RATE: 0.3,
   BOOST_MIN_ACTIVATE: 0.15,
+  BOOST_COOLDOWN_TIME: 1.5,
   JUMP_FORCE: 8,
   GRAVITY: 15,
   BOOST_FOV: 80,

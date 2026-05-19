@@ -158,7 +158,7 @@ function create3DButton(scene: THREE.Scene, theme: 'light' | 'dark'): {
     depthWrite: false,
   });
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(0, -0.3, 0.5); // centered, below about card
+  mesh.position.set(0, 0.1, 0.5); // centered, below about card but still visible
   scene.add(mesh);
 
   return {
@@ -309,7 +309,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
         gsap.to(enterButton.mesh.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
       }
       // Bob the button gently
-      enterButton.mesh.position.y = -0.3 + Math.sin(time * 1.5) * 0.015;
+      enterButton.mesh.position.y = 0.1 + Math.sin(time * 1.5) * 0.015;
     }
 
     // Cursor light follows mouse

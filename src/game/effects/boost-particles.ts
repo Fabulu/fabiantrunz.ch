@@ -11,156 +11,147 @@ export interface BoostParticles {
   dispose(): void;
 }
 
-const FIRE_COUNT = 60;
-const SMOKE_COUNT = 40;
 const HIDE_Y = -500;
 
-export function createBoostParticles(scene: Scene): BoostParticles {
-  // --- Fire particles ---
-  const firePos = new Float32Array(FIRE_COUNT * 3);
-  const fireVel = new Float32Array(FIRE_COUNT * 3);
-  const fireLife = new Float32Array(FIRE_COUNT);
-  const fireColors = new Float32Array(FIRE_COUNT * 3);
+interface ParticleGroup {
+  count: number;
+  pos: Float32Array;
+  vel: Float32Array;
+  life: Float32Array;
+  geo: BufferGeometry;
+  mat: PointsMaterial;
+  pts: Points;
+}
 
-  for (let i = 0; i < FIRE_COUNT; i++) firePos[i * 3 + 1] = HIDE_Y;
+function createGroup(scene: Scene, color: number, baseSize: number, baseOpacity: number, count: number): ParticleGroup {
+  const pos = new Float32Array(count * 3);
+  const vel = new Float32Array(count * 3);
+  const life = new Float32Array(count);
+  for (let i = 0; i < count; i++) pos[i * 3 + 1] = HIDE_Y;
 
-  const fireGeo = new BufferGeometry();
-  fireGeo.setAttribute('position', new BufferAttribute(firePos, 3));
-  fireGeo.setAttribute('color', new BufferAttribute(fireColors, 3));
+  const geo = new BufferGeometry();
+  geo.setAttribute('position', new BufferAttribute(pos, 3));
 
-  const fireMat = new PointsMaterial({
-    size: 1.0,
+  const mat = new PointsMaterial({
+    color,
+    size: baseSize,
     transparent: true,
-    opacity: 0.9,
-    vertexColors: true,
+    opacity: baseOpacity,
     sizeAttenuation: true,
     depthWrite: false,
     depthTest: false,
     fog: false,
   });
-  fireMat.toneMapped = false;
+  mat.toneMapped = false;
 
-  const firePts = new Points(fireGeo, fireMat);
-  firePts.frustumCulled = false;
-  scene.add(firePts);
+  const pts = new Points(geo, mat);
+  pts.frustumCulled = false;
+  scene.add(pts);
 
-  // --- Smoke particles ---
-  const smokePos = new Float32Array(SMOKE_COUNT * 3);
-  const smokeVel = new Float32Array(SMOKE_COUNT * 3);
-  const smokeLife = new Float32Array(SMOKE_COUNT);
+  return { count, pos, vel, life, geo, mat, pts };
+}
 
-  for (let i = 0; i < SMOKE_COUNT; i++) smokePos[i * 3 + 1] = HIDE_Y;
+function spawnParticle(
+  g: ParticleGroup, i: number,
+  cx: number, cy: number, cz: number,
+  cH: number, sH: number, pX: number, pZ: number,
+  intensity: number, riseSpeed: number, backSpeed: number, sideSpread: number, lifeBase: number, lifeRange: number,
+): void {
+  const i3 = i * 3;
+  const side = (Math.random() - 0.5) * 0.6;
+  g.pos[i3]     = cx - cH * 1.8 + pX * side;
+  g.pos[i3 + 1] = cy + 0.15 + Math.random() * 0.2;
+  g.pos[i3 + 2] = cz - sH * 1.8 + pZ * side;
 
-  const smokeGeo = new BufferGeometry();
-  smokeGeo.setAttribute('position', new BufferAttribute(smokePos, 3));
+  const spd = backSpeed * (0.5 + intensity * 0.5);
+  g.vel[i3]     = -cH * spd + pX * (Math.random() - 0.5) * sideSpread;
+  g.vel[i3 + 1] = riseSpeed;
+  g.vel[i3 + 2] = -sH * spd + pZ * (Math.random() - 0.5) * sideSpread;
 
-  const smokeMat = new PointsMaterial({
-    color: 0x333333,
-    size: 1.8,
-    transparent: true,
-    opacity: 0.5,
-    sizeAttenuation: true,
-    depthWrite: false,
-    depthTest: false,
-    fog: false,
-  });
+  g.life[i] = lifeBase + Math.random() * lifeRange + intensity * 0.2;
+}
 
-  const smokePts = new Points(smokeGeo, smokeMat);
-  smokePts.frustumCulled = false;
-  scene.add(smokePts);
-
-  // Fire color palette: white → yellow → orange → red
-  function randomFireColor(i3: number): void {
-    const r = Math.random();
-    if (r < 0.15) {
-      // White-hot core
-      fireColors[i3] = 1; fireColors[i3 + 1] = 0.95; fireColors[i3 + 2] = 0.8;
-    } else if (r < 0.4) {
-      // Bright yellow
-      fireColors[i3] = 1; fireColors[i3 + 1] = 0.8; fireColors[i3 + 2] = 0.2;
-    } else if (r < 0.75) {
-      // Orange
-      fireColors[i3] = 1; fireColors[i3 + 1] = 0.4; fireColors[i3 + 2] = 0;
-    } else {
-      // Deep red-orange
-      fireColors[i3] = 0.9; fireColors[i3 + 1] = 0.15; fireColors[i3 + 2] = 0;
+function tickGroup(g: ParticleGroup, dt: number): void {
+  for (let i = 0; i < g.count; i++) {
+    const i3 = i * 3;
+    if (g.life[i] > 0) {
+      g.pos[i3]     += g.vel[i3] * dt;
+      g.pos[i3 + 1] += g.vel[i3 + 1] * dt;
+      g.pos[i3 + 2] += g.vel[i3 + 2] * dt;
+      g.life[i] -= dt;
+      if (g.life[i] <= 0) g.pos[i3 + 1] = HIDE_Y;
     }
   }
+  g.geo.getAttribute('position').needsUpdate = true;
+}
+
+export function createBoostParticles(scene: Scene): BoostParticles {
+  // 4 separate groups with distinct colors — no vertex color complexity
+  const white  = createGroup(scene, 0xffffff, 1.2, 0.95, 15);  // white-hot core
+  const yellow = createGroup(scene, 0xffdd00, 1.0, 0.9, 20);   // yellow flames
+  const orange = createGroup(scene, 0xff5500, 0.9, 0.85, 25);  // orange flames
+  const smoke  = createGroup(scene, 0x444444, 2.0, 0.5, 30);   // dark smoke
+
+  const groups = [white, yellow, orange, smoke];
 
   function tick(dt: number, car: Group, heading: number, active: boolean, intensity: number): void {
     const cH = Math.cos(heading);
     const sH = Math.sin(heading);
-    const pX = -sH; // perpendicular
+    const pX = -sH;
     const pZ = cH;
+    const cx = car.position.x;
+    const cy = car.position.y;
+    const cz = car.position.z;
 
-    fireMat.size = 0.9 + intensity * 0.7;
-    smokeMat.size = 1.2 + intensity * 1.0;
-    smokeMat.opacity = 0.3 + intensity * 0.3;
+    // Scale sizes with intensity
+    white.mat.size  = 0.8 + intensity * 0.6;
+    yellow.mat.size = 0.7 + intensity * 0.5;
+    orange.mat.size = 0.6 + intensity * 0.5;
+    smoke.mat.size  = 1.5 + intensity * 1.0;
+    smoke.mat.opacity = 0.3 + intensity * 0.3;
 
-    // --- Fire ---
-    for (let i = 0; i < FIRE_COUNT; i++) {
-      const i3 = i * 3;
-      if (fireLife[i] <= 0) {
-        firePos[i3 + 1] = HIDE_Y;
-        if (active) {
-          const side = (i % 2 === 0 ? -1 : 1) * (0.25 + Math.random() * 0.2);
-          firePos[i3]     = car.position.x - cH * 1.8 + pX * side;
-          firePos[i3 + 1] = car.position.y + 0.15 + Math.random() * 0.2;
-          firePos[i3 + 2] = car.position.z - sH * 1.8 + pZ * side;
-
-          const spd = (3 + Math.random() * 2) * (0.5 + intensity * 0.5);
-          fireVel[i3]     = -cH * spd + pX * (Math.random() - 0.5) * 2;
-          fireVel[i3 + 1] = 0.2 + Math.random() * 0.5;
-          fireVel[i3 + 2] = -sH * spd + pZ * (Math.random() - 0.5) * 2;
-
-          randomFireColor(i3);
-          fireLife[i] = 0.3 + Math.random() * 0.5 + intensity * 0.2;
+    // Spawn dead particles when active
+    if (active) {
+      for (const g of groups) {
+        for (let i = 0; i < g.count; i++) {
+          if (g.life[i] <= 0) {
+            if (g === smoke) {
+              // Smoke: slower, rises more, longer life
+              spawnParticle(g, i, cx, cy, cz, cH, sH, pX, pZ, intensity,
+                0.8 + Math.random() * 1.2, // rise
+                1 + Math.random() * 1.5,   // back
+                1.5,                        // side spread
+                0.6, 0.8);                  // life
+            } else if (g === white) {
+              // White: tight, fast, short life (hot core)
+              spawnParticle(g, i, cx, cy, cz, cH, sH, pX, pZ, intensity,
+                0.1 + Math.random() * 0.3,
+                4 + Math.random() * 2,
+                1.5,
+                0.15, 0.2);
+            } else {
+              // Yellow/orange: moderate
+              spawnParticle(g, i, cx, cy, cz, cH, sH, pX, pZ, intensity,
+                0.2 + Math.random() * 0.5,
+                3 + Math.random() * 2,
+                2.0,
+                0.3, 0.4);
+            }
+          }
         }
-      } else {
-        firePos[i3]     += fireVel[i3] * dt;
-        firePos[i3 + 1] += fireVel[i3 + 1] * dt;
-        firePos[i3 + 2] += fireVel[i3 + 2] * dt;
-        fireLife[i] -= dt;
       }
     }
-    fireGeo.getAttribute('position').needsUpdate = true;
-    fireGeo.getAttribute('color').needsUpdate = true;
 
-    // --- Smoke ---
-    for (let i = 0; i < SMOKE_COUNT; i++) {
-      const i3 = i * 3;
-      if (smokeLife[i] <= 0) {
-        smokePos[i3 + 1] = HIDE_Y;
-        if (active) {
-          const side = (Math.random() - 0.5) * 0.6;
-          smokePos[i3]     = car.position.x - cH * 2.0 + pX * side;
-          smokePos[i3 + 1] = car.position.y + 0.3 + Math.random() * 0.2;
-          smokePos[i3 + 2] = car.position.z - sH * 2.0 + pZ * side;
-
-          const spd = (1 + Math.random() * 1.5) * (0.3 + intensity * 0.3);
-          smokeVel[i3]     = -cH * spd + pX * (Math.random() - 0.5) * 1.5;
-          smokeVel[i3 + 1] = 0.8 + Math.random() * 1.5; // smoke rises more
-          smokeVel[i3 + 2] = -sH * spd + pZ * (Math.random() - 0.5) * 1.5;
-
-          smokeLife[i] = 0.6 + Math.random() * 0.8 + intensity * 0.3;
-        }
-      } else {
-        smokePos[i3]     += smokeVel[i3] * dt;
-        smokePos[i3 + 1] += smokeVel[i3 + 1] * dt;
-        smokePos[i3 + 2] += smokeVel[i3 + 2] * dt;
-        smokeLife[i] -= dt;
-      }
-    }
-    smokeGeo.getAttribute('position').needsUpdate = true;
+    // Tick all groups
+    for (const g of groups) tickGroup(g, dt);
   }
 
   function dispose(): void {
-    scene.remove(firePts);
-    scene.remove(smokePts);
-    fireGeo.dispose();
-    smokeGeo.dispose();
-    fireMat.dispose();
-    smokeMat.dispose();
+    for (const g of groups) {
+      scene.remove(g.pts);
+      g.geo.dispose();
+      g.mat.dispose();
+    }
   }
 
   return { tick, dispose };

@@ -55,10 +55,10 @@ export function createBoostParticles(scene: Scene): BoostParticles {
   smokeGeo.setAttribute('position', new BufferAttribute(smokePos, 3));
 
   const smokeMat = new PointsMaterial({
-    color: 0x222222,
-    size: 1.2,
+    color: 0x333333,
+    size: 1.8,
     transparent: true,
-    opacity: 0.3,
+    opacity: 0.5,
     sizeAttenuation: true,
     depthWrite: false,
     depthTest: false,
@@ -93,9 +93,9 @@ export function createBoostParticles(scene: Scene): BoostParticles {
     const pX = -sH; // perpendicular
     const pZ = cH;
 
-    fireMat.size = 0.7 + intensity * 0.5;
-    smokeMat.size = 0.8 + intensity * 0.6;
-    smokeMat.opacity = 0.15 + intensity * 0.15;
+    fireMat.size = 0.9 + intensity * 0.7;
+    smokeMat.size = 1.2 + intensity * 1.0;
+    smokeMat.opacity = 0.3 + intensity * 0.3;
 
     // --- Fire ---
     for (let i = 0; i < FIRE_COUNT; i++) {

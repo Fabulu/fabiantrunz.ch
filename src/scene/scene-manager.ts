@@ -23,10 +23,10 @@ const DESKTOP_POSITIONS: [number, number, number][] = [
 ];
 
 const PORTRAIT_POSITIONS: [number, number, number][] = [
-  [-0.8, 3.3, 0], [0.8, 3.3, 0],
-  [-0.8, 2.05, 0], [0.8, 2.05, 0],
-  [-0.8, 0.8, 0], [0.8, 0.8, 0],
-  [0, -0.3, 0], // about: -1.8 + 1.5
+  [-0.8, 3.8, 0], [0.8, 3.8, 0],
+  [-0.8, 2.55, 0], [0.8, 2.55, 0],
+  [-0.8, 1.3, 0], [0.8, 1.3, 0],
+  [0, 0.2, 0], // about: lifted to stay above ground in 3D
 ];
 
 // Landscape mobile positions: two rows (about is last = index 6)
@@ -62,7 +62,7 @@ function applyLayout(
   if (mode === 'portrait') {
     positions = PORTRAIT_POSITIONS;
     fov = 70;
-    camPos = [0, 1.5, 5.0]; // original 0 + 1.5
+    camPos = [0, 2.0, 5.0]; // lifted to match portrait card positions
     panelScale = 0.65;
     aboutScale = 0.6;
   } else if (mode === 'landscape-mobile') {
@@ -157,7 +157,7 @@ function create3DButton(scene: THREE.Scene, theme: 'light' | 'dark'): {
     depthWrite: false,
   });
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(1.8, 0.2, 0.5); // original -1.3 + 1.5 camera lift
+  mesh.position.set(0, -0.3, 0.5); // centered, below about card
   scene.add(mesh);
 
   return {
@@ -308,7 +308,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
         gsap.to(enterButton.mesh.scale, { x: 1, y: 1, z: 1, duration: 0.2 });
       }
       // Bob the button gently
-      enterButton.mesh.position.y = 0.2 + Math.sin(time * 1.5) * 0.015;
+      enterButton.mesh.position.y = -0.3 + Math.sin(time * 1.5) * 0.015;
     }
 
     // Cursor light follows mouse

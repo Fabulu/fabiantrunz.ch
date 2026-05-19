@@ -62,19 +62,19 @@ function applyLayout(
   if (mode === 'portrait') {
     positions = PORTRAIT_POSITIONS;
     fov = 70;
-    camPos = [0, 2.0, 5.0]; // original 0 + 2.0
+    camPos = [0, 1.5, 5.0]; // original 0 + 1.5
     panelScale = 0.65;
     aboutScale = 0.6;
   } else if (mode === 'landscape-mobile') {
     positions = LANDSCAPE_POSITIONS;
     fov = 50;
-    camPos = [0, 2.0, 3.5]; // original 0 + 2.0
+    camPos = [0, 1.5, 3.5]; // original 0 + 1.5
     panelScale = 0.7;
     aboutScale = 0.65;
   } else {
     positions = DESKTOP_POSITIONS;
     fov = 50;
-    camPos = [0, 2.3, 4.5]; // original 0.3 + 2.0
+    camPos = [0, 1.8, 4.5]; // original 0.3 + 1.5 (same offset from cards as original)
     panelScale = 1.0;
     aboutScale = 0.85;
   }
@@ -203,9 +203,9 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
   const width = container.clientWidth;
   const height = container.clientHeight;
   const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
-  const cameraBasePosition = new THREE.Vector3(0, 2.3, 4.5);
+  const cameraBasePosition = new THREE.Vector3(0, 1.8, 4.5);
   camera.position.copy(cameraBasePosition);
-  camera.lookAt(0, 2.3, 0);
+  camera.lookAt(0, 1.8, 0);
 
   // 3. Scene
   const scene = new THREE.Scene();

@@ -34,6 +34,8 @@ export function createBoostParticles(scene: Scene): BoostParticles {
     blending: NormalBlending,
     sizeAttenuation: true,
     depthWrite: false,
+    depthTest: false, // always render on top of terrain
+    fog: false,       // don't fade with distance fog
   });
 
   const pts = new Points(geo, mat);

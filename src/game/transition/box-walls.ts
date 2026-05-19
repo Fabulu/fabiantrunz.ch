@@ -39,7 +39,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   leftMesh.rotation.y = Math.PI / 2;
   leftMesh.position.y = 5;
   const left = new THREE.Group();
-  left.position.set(-11, 0.15, 6);
+  left.position.set(-6, 0.15, 6);
   left.add(leftMesh);
   scene.add(left);
   track(leftGeo, leftMat);
@@ -51,7 +51,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   rightMesh.rotation.y = -Math.PI / 2;
   rightMesh.position.y = 5;
   const right = new THREE.Group();
-  right.position.set(11, 0.15, 6);
+  right.position.set(6, 0.15, 6);
   right.add(rightMesh);
   scene.add(right);
   track(rightGeo, rightMat);

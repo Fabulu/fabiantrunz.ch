@@ -43,10 +43,8 @@ function height(x: number, z: number): number {
   const ff = Math.max(0, 1 - dist(x, z, -35, -40) / 30);
   h += ff * (1.2 + 0.8 * Math.sin(x * 0.25 + 1) * Math.cos(z * 0.3 + 2));
 
-  // Canyon (west): sharp drop near x=-50, |z|<25
-  const cx = Math.abs(x + 50);
-  const cz = Math.abs(z);
-  if (cx < 15 && cz < 25) h -= 5 * smoothstep(7, 3, cx) * smoothstep(25, 15, cz);
+  // Mountain (west): tall peak at x=-50 for SE4x tower
+  h += 10 * Math.exp(-((x + 50) ** 2 + z * z) / 150);
 
   // Lake (south): depression
   h -= 2 * Math.max(0, 1 - dist(x, z, 0, 50) / 20);
@@ -67,7 +65,7 @@ const ZONES = [
   { name: 'mountain', cx: 50, cz: 0, r: 0x1f, g: 0x52, b: 0x16 },
   { name: 'meadow', cx: 35, cz: -40, r: 0x3d, g: 0x8c, b: 0x2a },
   { name: 'forest', cx: -35, cz: -40, r: 0x1a, g: 0x3d, b: 0x12 },
-  { name: 'canyon', cx: -50, cz: 0, r: 0x7a, g: 0x44, b: 0x16 },
+  { name: 'peak', cx: -50, cz: 0, r: 0xcc, g: 0xcc, b: 0xdd },
   { name: 'lake', cx: 0, cz: 50, r: 0xb0, g: 0x80, b: 0x40 },
 ];
 
@@ -121,14 +119,12 @@ function getZoneColor(x: number, z: number, h: number): [number, number, number]
     b = b + (PATH_COLOR.b / 255 - b) * pathBlend;
   }
 
-  // 5. Canyon special case: blend toward grey rock at the bottom of the canyon
-  const cxDist = Math.abs(x + 50);
-  const czDist = Math.abs(z);
-  if (cxDist < 15 && czDist < 25 && h < -2) {
-    const greyBlend = Math.min(1, (-2 - h) / 3); // gradual grey at deepest parts
-    r = r * (1 - greyBlend) + (0x88 / 255) * greyBlend;
-    g = g * (1 - greyBlend) + (0x88 / 255) * greyBlend;
-    b = b * (1 - greyBlend) + (0x88 / 255) * greyBlend;
+  // 5. Snow caps: blend toward white at high elevations
+  if (h > 5) {
+    const snowBlend = Math.min(1, (h - 5) / 5);
+    r = r * (1 - snowBlend) + 0.95 * snowBlend;
+    g = g * (1 - snowBlend) + 0.95 * snowBlend;
+    b = b * (1 - snowBlend) + 0.98 * snowBlend;
   }
 
   // 6. PS1 grit: deterministic per-channel offset

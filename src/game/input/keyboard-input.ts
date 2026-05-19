@@ -6,7 +6,7 @@ export function createKeyboardInput(): { getState(): InputState; dispose(): void
   function onKeyDown(e: KeyboardEvent): void {
     keys.add(e.code);
     // Prevent default for game keys to avoid page scroll etc
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
       e.preventDefault();
     }
   }

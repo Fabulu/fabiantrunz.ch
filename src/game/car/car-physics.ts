@@ -61,7 +61,7 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
 
     // Boost intensity ramps up while active, drops when released
     if (boostActive) {
-      boostIntensity = Math.min(1, boostIntensity + 0.4 * dt); // reaches 1.0 in 2.5s
+      boostIntensity = Math.min(1, boostIntensity + 0.6 * dt); // reaches 1.0 in ~1.7s
     } else {
       boostIntensity = Math.max(0, boostIntensity - 2.0 * dt);
     }

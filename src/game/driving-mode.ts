@@ -9,7 +9,6 @@ import { updateChaseCamera } from './camera/chase-camera';
 import { createKeyboardInput } from './input/keyboard-input';
 import { createTouchJoystick } from './input/touch-joystick';
 import { createFog } from './environment/sky';
-import { getHeightAt } from './environment/terrain';
 import { createDrivingLighting } from './environment/driving-lighting';
 import { createRocks } from './physics/rocks';
 import { createCarCollider } from './physics/car-collider';
@@ -42,6 +41,10 @@ export async function enterDrivingMode(
 ): Promise<DrivingMode> {
   setMode('transitioning');
 
+  // Snap camera to gallery base (remove parallax offset)
+  camera.position.set(0, 0.3, 4.5);
+  camera.lookAt(0, 0, 0);
+
   // UI
   ui.onExitClick(onExit);
 
@@ -51,68 +54,76 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Lift panels above floor (Y=0.3) + terrain. Panels have radius 0.6,
-  // so Y >= 1.0 puts bottom edge at Y=0.4 (above floor).
-  // Save original Y for restore on exit.
+  // Lift panels above floor. Save original Y for restore on exit.
   const originalPanelY: number[] = [];
   for (const item of floatState) {
     originalPanelY.push(item.panel.basePosition.y);
-    const liftedY = Math.max(item.panel.basePosition.y, 1.0);
+    const liftedY = Math.max(item.panel.basePosition.y, 0.8);
     item.panel.mesh.position.y = liftedY;
     item.panel.basePosition.y = liftedY;
   }
 
-  // Car spawns between camera and panels, closer to camera (Z=3)
-  // rotation.y = PI/2 → rear faces camera at +Z
-  // Chase cam at heading=-PI/2: (car.x, Y, car.z + 8) = (0, Y, 11)
-  const carY = getHeightAt(0, 3);
+  // Car spawns BEHIND the camera (Z=8). Camera at Z=4.5 can't see it yet.
+  // rotation.y = PI/2 → rear faces +Z. heading = -PI/2 → car faces -Z.
+  // Chase cam at heading=-PI/2: (car.x, Y, car.z + 8) = (0, Y, 16)
   const car = preloadedAssets.car;
-  car.group.position.set(0, Math.max(carY, 0.3), 3);
+  car.group.position.set(0, 0, 8);
   car.group.rotation.y = Math.PI / 2;
   car.group.visible = true;
   scene.add(car.group);
 
-  // Box enclosure
+  // Box enclosure (big enough for chase cam at Z=16)
   const walls = createBoxWalls(scene);
 
-  // Driving lights early so terrain isn't black
+  // Driving lights early
   const drivingLights = createDrivingLighting(scene);
 
   // ─── Cinematic transition ────────────────────────────────────────
-  // Phase 1: Camera pulls BACK (Z increases) to reveal car in front of panels
-  // Phase 2: Walls slide away slowly (4-5s)
-  // Phase 3: Camera arcs to chase position behind car
-  const carPos = car.group.position;
+  // Camera starts at gallery (0, 0.3, 4.5) looking at (0, 0, 0).
+  // Pulls straight back along Z, past the car at Z=8, to chase pos at Z=16.
+  // No arc needed — pure Z pullback. No lookAt axis crossing.
+
+  // Smooth lookAt interpolation (gallery target → car target)
+  const lookTarget = new THREE.Vector3(0, 0, 0); // starts at gallery lookAt
 
   await new Promise<void>(resolve => {
     const master = gsap.timeline({ onComplete: resolve });
 
     // Sound
-    master.call(() => audio.playEffect('box-open'), undefined, 0.3);
+    master.call(() => audio.playEffect('box-open'), undefined, 0.5);
 
-    // Walls fall on hinges (starts at 0.5s)
+    // Walls fall on hinges (starts at 1s — after camera has started pulling back)
     const wallTl = createWallOpenTimeline(walls);
-    master.add(wallTl, 0.5);
+    master.add(wallTl, 1.0);
 
-    // Phase 1 (0-3s): Camera pulls BACK to reveal car
-    // From gallery (0, 0.3, 4.5) to (0, 3, 11) — chase cam will be at Z=11
-    master.to(camera.position, {
-      x: 0,
-      y: 3,
-      z: 11,
+    // Smooth lookAt: (0,0,0) → (0, 1, 8) over first 3s
+    master.to(lookTarget, {
+      y: 1,
+      z: 8,
       duration: 3.0,
       ease: 'power1.inOut',
-      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 0.5, carPos.z),
     }, 0);
 
-    // At 1.5s: sky + terrain appear through widening gaps
+    // Camera pulls back: (0, 0.3, 4.5) → (0, 4, 16)
+    // This is a straight line along Z — camera passes the car at Z=8
+    // and settles at the chase position Z=16
+    master.to(camera.position, {
+      x: 0,
+      y: 4,
+      z: 16,
+      duration: 5.0,
+      ease: 'power1.inOut',
+      onUpdate: () => camera.lookAt(lookTarget.x, lookTarget.y, lookTarget.z),
+    }, 0);
+
+    // At 2s: sky + terrain appear
     master.call(() => {
       scene.background = preloadedAssets.sky;
       scene.add(preloadedAssets.terrain);
       scene.fog = createFog();
-    }, undefined, 1.5);
+    }, undefined, 2.0);
 
-    // At 2.0s: swap lighting
+    // At 2.5s: swap lighting
     master.call(() => {
       scene.remove(galleryLightingRig.ambient);
       scene.remove(galleryLightingRig.spot);
@@ -120,19 +131,7 @@ export async function enterDrivingMode(
       scene.remove(galleryLightingRig.edgeLightLeft);
       scene.remove(galleryLightingRig.edgeLightRight);
       scene.remove(galleryLightingRig.cursorLight);
-    }, undefined, 2.0);
-
-    // Phase 3 (4.0-5.5s): Camera settles to chase position
-    // Car at Z=3, chase cam at Z=3+8=11. Camera already pulled to Z=11.
-    // Just adjust Y to chase height.
-    master.to(camera.position, {
-      x: 0,
-      y: carPos.y + 4,
-      z: carPos.z + 8,
-      duration: 1.5,
-      ease: 'power2.inOut',
-      onUpdate: () => camera.lookAt(carPos.x, carPos.y + 1, carPos.z),
-    }, 4.0);
+    }, undefined, 2.5);
   });
 
   // Car physics — inits from car.group.position (no teleport)
@@ -191,7 +190,7 @@ export async function enterDrivingMode(
     // Track if car has moved from spawn (for panel scatter gate)
     if (!carHasMoved) {
       const dx = state.position.x - 0;
-      const dz = state.position.z - 3; // car starts at Z=3
+      const dz = state.position.z - 8; // car starts at Z=8
       if (dx * dx + dz * dz > 9) carHasMoved = true; // moved 3+ units from spawn
     }
 

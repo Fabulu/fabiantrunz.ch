@@ -20,84 +20,77 @@ function wallMat(): THREE.MeshBasicMaterial {
 }
 
 /**
- * Box enclosing gallery. Camera at (0,0.3,4.5), car at (0,0,3), panels at Z≈0.
- * Box: X=-12..+12, Y=-1..+8, Z=-7..+14
- *
- * Hinge walls: group has NO initial rotation. Mesh is rotated inside the group
- * so that animating group.rotation.z (for left/right) or group.rotation.x (for back)
- * works in WORLD axes without Euler compounding issues.
+ * Box enclosing gallery + car behind camera.
+ * Camera at (0,0.3,4.5), panels at Z≈0, car at Z=8.
+ * Chase cam settles at Z=16. Box: X=-15..+15, Y=0..+10, Z=-8..+20
+ * Wall pivots at Y=0 so fallen walls rest on terrain (which is flat near origin).
  */
 export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   const geos: THREE.BufferGeometry[] = [];
   const mats: THREE.MeshBasicMaterial[] = [];
+  function track(g: THREE.BufferGeometry, m: THREE.MeshBasicMaterial) { geos.push(g); mats.push(m); }
 
-  function tracked(geo: THREE.BufferGeometry, mat: THREE.MeshBasicMaterial): void {
-    geos.push(geo);
-    mats.push(mat);
-  }
-
-  // LEFT wall — pivot at (-12, -1, 1), mesh faces +X
-  const leftGeo = new THREE.PlaneGeometry(20, 9);
+  // LEFT wall — pivot at bottom edge, no group rotation (mesh rotated inside)
+  const leftGeo = new THREE.PlaneGeometry(28, 10);
   const leftMat = wallMat();
   const leftMesh = new THREE.Mesh(leftGeo, leftMat);
-  leftMesh.rotation.y = Math.PI / 2; // face +X (inward)
-  leftMesh.position.y = 4.5; // offset from pivot (half height)
+  leftMesh.rotation.y = Math.PI / 2;
+  leftMesh.position.y = 5;
   const left = new THREE.Group();
-  left.position.set(-12, -1, 1);
+  left.position.set(-15, 0, 6);
   left.add(leftMesh);
   scene.add(left);
-  tracked(leftGeo, leftMat);
+  track(leftGeo, leftMat);
 
-  // RIGHT wall — pivot at (+12, -1, 1), mesh faces -X
-  const rightGeo = new THREE.PlaneGeometry(20, 9);
+  // RIGHT wall
+  const rightGeo = new THREE.PlaneGeometry(28, 10);
   const rightMat = wallMat();
   const rightMesh = new THREE.Mesh(rightGeo, rightMat);
-  rightMesh.rotation.y = -Math.PI / 2; // face -X (inward)
-  rightMesh.position.y = 4.5;
+  rightMesh.rotation.y = -Math.PI / 2;
+  rightMesh.position.y = 5;
   const right = new THREE.Group();
-  right.position.set(12, -1, 1);
+  right.position.set(15, 0, 6);
   right.add(rightMesh);
   scene.add(right);
-  tracked(rightGeo, rightMat);
+  track(rightGeo, rightMat);
 
-  // BACK wall — pivot at (0, -1, -7), mesh faces +Z
-  const backGeo = new THREE.PlaneGeometry(24, 9);
+  // BACK wall — pivot at bottom, faces +Z
+  const backGeo = new THREE.PlaneGeometry(30, 10);
   const backMat = wallMat();
   const backMesh = new THREE.Mesh(backGeo, backMat);
-  // No Y rotation needed — PlaneGeometry faces +Z by default
-  backMesh.position.y = 4.5;
+  backMesh.position.y = 5;
   const back = new THREE.Group();
-  back.position.set(0, -1, -7);
+  back.position.set(0, 0, -8);
   back.add(backMesh);
   scene.add(back);
-  tracked(backGeo, backMat);
+  track(backGeo, backMat);
 
-  // TOP — flat ceiling, flies up
-  const topGeo = new THREE.PlaneGeometry(24, 21);
+  // TOP
+  const topGeo = new THREE.PlaneGeometry(30, 28);
   const topMat = wallMat();
   const top = new THREE.Mesh(topGeo, topMat);
-  top.position.set(0, 8, 3);
+  top.position.set(0, 10, 6);
   top.rotation.x = Math.PI / 2;
   scene.add(top);
-  tracked(topGeo, topMat);
+  track(topGeo, topMat);
 
-  // FRONT — behind camera, fades
-  const frontGeo = new THREE.PlaneGeometry(24, 9);
+  // FRONT — behind chase cam (Z=20), fades
+  const frontGeo = new THREE.PlaneGeometry(30, 10);
   const frontMat = wallMat();
   const front = new THREE.Mesh(frontGeo, frontMat);
-  front.position.set(0, 3.5, 14);
+  front.position.set(0, 5, 20);
   front.rotation.y = Math.PI;
   scene.add(front);
-  tracked(frontGeo, frontMat);
+  track(frontGeo, frontMat);
 
-  // FLOOR — Y=0.3
-  const floorGeo = new THREE.PlaneGeometry(28, 24);
+  // FLOOR — Y=0.1 (terrain is flat at origin)
+  const floorGeo = new THREE.PlaneGeometry(34, 32);
   const floorMat = wallMat();
   const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.position.set(0, 0.3, 3);
+  floor.position.set(0, 0.1, 6);
   floor.rotation.x = -Math.PI / 2;
   scene.add(floor);
-  tracked(floorGeo, floorMat);
+  track(floorGeo, floorMat);
 
   function dispose() {
     scene.remove(left, right, back, top, front, floor);
@@ -108,49 +101,28 @@ export function createBoxWalls(scene: THREE.Scene): BoxWalls {
   return { left, right, back, top, front, floor, dispose };
 }
 
-/**
- * Left/right fall outward on bottom hinge. Back falls backward.
- * Top flies up. Front fades. Floor stays permanently.
- * NO fading on side/back walls — they stay as fallen scenery.
- */
+/** Walls fall outward on bottom hinge. Stay on ground. */
 export function createWallOpenTimeline(box: BoxWalls): gsap.core.Timeline {
   const tl = gsap.timeline();
 
-  // Left: rotate around Z axis (group has no Y rotation, so Z = world Z)
-  // -PI/2 makes it fall to the left
-  tl.to(box.left.rotation, {
-    z: -Math.PI / 2,
-    duration: 4.5,
-    ease: 'power2.in',
-  }, 0);
+  // Left falls outward
+  tl.to(box.left.rotation, { z: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0);
 
-  // Right: falls to the right
-  tl.to(box.right.rotation, {
-    z: Math.PI / 2,
-    duration: 4.5,
-    ease: 'power2.in',
-  }, 0.2);
+  // Right falls outward
+  tl.to(box.right.rotation, { z: Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.2);
 
-  // Back: falls backward (rotate around X)
-  tl.to(box.back.rotation, {
-    x: -Math.PI / 2,
-    duration: 4.5,
-    ease: 'power2.in',
-  }, 0.4);
+  // Back falls backward
+  tl.to(box.back.rotation, { x: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.4);
 
-  // Top: fly up
-  tl.to(box.top.position, {
-    y: 25,
-    duration: 4.0,
-    ease: 'power1.in',
-  }, 0.3);
+  // Top flies up
+  tl.to(box.top.position, { y: 30, duration: 4.0, ease: 'power1.in' }, 0.3);
 
-  // Front (behind camera): fade
-  const frontMat = box.front.material as THREE.MeshBasicMaterial;
-  frontMat.transparent = true;
-  tl.to(frontMat, { opacity: 0, duration: 0.8 }, 0);
+  // Front fades (behind camera, never seen)
+  const fm = box.front.material as THREE.MeshBasicMaterial;
+  fm.transparent = true;
+  tl.to(fm, { opacity: 0, duration: 0.5 }, 0);
 
-  // Floor: stays forever (no fade)
+  // Floor stays permanently
 
   return tl;
 }

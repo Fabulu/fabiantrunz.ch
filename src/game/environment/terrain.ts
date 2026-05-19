@@ -54,8 +54,10 @@ function height(x: number, z: number): number {
   // Lake (south): depression
   h -= 2 * Math.max(0, 1 - dist(x, z, 0, 50) / 20);
 
-  // Subtle deterministic noise
-  h += 0.15 * Math.sin(x * 0.3) * Math.cos(z * 0.25);
+  // Subtle deterministic noise — faded near origin so spawn area is flat
+  const d = Math.sqrt(x * x + z * z);
+  const noiseFade = smoothstep(15, 25, d);
+  h += 0.15 * Math.sin(x * 0.3) * Math.cos(z * 0.25) * noiseFade;
 
   return h;
 }

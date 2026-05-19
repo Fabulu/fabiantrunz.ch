@@ -157,14 +157,14 @@ export function setupInteraction(
     const isPortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
     const isLandscapeMobile = window.innerHeight < 500;
 
-    let focusX = -1.2, focusY = 0, focusZ = 2.0;
+    let focusX = -1.2, focusY = 1.5, focusZ = 2.0; // +1.5 for camera lift
     if (isPortrait) {
       focusX = 0;
-      focusY = 1.2; // upper area but not off-screen
+      focusY = 2.7; // +1.5 for camera lift
       focusZ = 1.8;
     } else if (isLandscapeMobile) {
-      focusX = -1.2; // left side, leaving room for description on right
-      focusY = 0;
+      focusX = -1.2;
+      focusY = 1.5; // +1.5 for camera lift
       focusZ = 1.5;
     }
 
@@ -202,7 +202,7 @@ export function setupInteraction(
     // Add a dedicated light on the focused panel — offset above & right
     // to avoid specular flare landing on the title text
     focusSpot = new THREE.PointLight(0xffffff, 8, 6, 1.5);
-    focusSpot.position.set(-0.5, 1.2, 3.0);
+    focusSpot.position.set(-0.5, 2.7, 3.0); // +1.5 for camera lift
     panels[0].mesh.parent!.add(focusSpot);
     focusSpot.intensity = 0;
     gsap.to(focusSpot, { intensity: 8, duration: 0.5 });

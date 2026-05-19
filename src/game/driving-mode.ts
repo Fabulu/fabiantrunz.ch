@@ -264,6 +264,9 @@ export async function enterDrivingMode(
     }
     resetPanels(floatState);
 
+    // Remove walls if still present
+    walls.dispose();
+
     // Remove driving objects
     scene.remove(preloadedAssets.terrain);
     scene.remove(car.group);

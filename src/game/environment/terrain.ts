@@ -26,9 +26,6 @@ function height(x: number, z: number): number {
   let h = 0;
 
   // Hilltop: flat-topped plateau
-  // Hilltop: completely flat at origin so gallery/car/panels sit at Y≈0
-  h += 0;
-
   // Mountain peaks (east): 4 narrow gaussians
   const peaks = [
     { x: 45, z: 5, h: 9, s: 120 },

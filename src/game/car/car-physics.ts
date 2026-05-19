@@ -153,6 +153,8 @@ export function createCarPhysics(car: CarObject): CarPhysicsController {
     boostActive = false;
     boostCharge = 1.0;
     boostIntensity = 0;
+    boostCooldown = 0;
+    boostCooldownTriggered = false;
     jumpConsumed = false;
     car.group.position.set(0, getHeightAt(0, 0), 0);
     car.group.rotation.set(0, 0, 0);

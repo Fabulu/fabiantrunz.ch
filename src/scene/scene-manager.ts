@@ -387,6 +387,7 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
     dispose() {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', onResize);
+      screen.orientation?.removeEventListener('change', onResize);
       renderer.domElement.removeEventListener('pointerdown', onBtnPointerDown);
       document.body.classList.remove('scene-active');
 

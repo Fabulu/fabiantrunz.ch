@@ -160,8 +160,8 @@ export function setupInteraction(
     let focusX = -1.2, focusY = 1.5, focusZ = 2.0; // +1.5 for camera lift
     if (isPortrait) {
       focusX = 0;
-      focusY = 2.5; // centered in portrait view
-      focusZ = 2.0;
+      focusY = 3.2; // high enough so overlay text doesn't cover card
+      focusZ = 2.5; // closer to camera = bigger on screen
     } else if (isLandscapeMobile) {
       focusX = -1.2;
       focusY = 1.5; // +1.5 for camera lift
@@ -185,13 +185,15 @@ export function setupInteraction(
       ease: 'power2.out',
     });
 
-    // Scale up focused panel — less on tight viewports and for larger panels
+    // Scale up focused panel per layout
     const isLandscape = window.innerHeight < 500;
-    const isFeatured = panel.baseScale > 0.9 && panels.indexOf(panel) === 0;
+    const isFeatured = panels.indexOf(panel) === 0;
+    const isAbout = panels.indexOf(panel) === panels.length - 1;
     let scaleMul = 1.2;
     if (isLandscape) scaleMul = 1.0;
-    else if (isPortrait) scaleMul = 1.0; // don't scale up in portrait (tight)
-    else if (isFeatured) scaleMul = 1.05; // featured is already bigger
+    else if (isPortrait && isAbout) scaleMul = 1.3; // about card bigger in portrait
+    else if (isPortrait) scaleMul = 1.0;
+    else if (isFeatured) scaleMul = 1.05;
     const fs = panel.baseScale * scaleMul;
     gsap.to(panel.mesh.scale, {
       x: fs,

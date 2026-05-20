@@ -160,7 +160,7 @@ export function setupInteraction(
     let focusX = -1.2, focusY = 1.5, focusZ = 2.0; // +1.5 for camera lift
     if (isPortrait) {
       focusX = 0;
-      focusY = 2.8; // above overlay text but not too high
+      focusY = 3.0; // above overlay text
       focusZ = 2.2;
     } else if (isLandscapeMobile) {
       focusX = -1.2;

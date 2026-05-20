@@ -15,7 +15,7 @@ function fgColor(theme: 'light' | 'dark'): string {
 }
 
 function mutedColor(theme: 'light' | 'dark'): string {
-  return theme === 'dark' ? '#d0d0e0' : '#4a4a6a';
+  return theme === 'dark' ? '#d0d0e0' : '#2a2a4a'; // darker for better contrast in light mode
 }
 
 function drawPlaceholderIcon(

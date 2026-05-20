@@ -160,8 +160,8 @@ export function setupInteraction(
     let focusX = -1.2, focusY = 1.5, focusZ = 2.0; // +1.5 for camera lift
     if (isPortrait) {
       focusX = 0;
-      focusY = 2.7; // +1.5 for camera lift
-      focusZ = 1.8;
+      focusY = 2.5; // centered in portrait view
+      focusZ = 2.0;
     } else if (isLandscapeMobile) {
       focusX = -1.2;
       focusY = 1.5; // +1.5 for camera lift
@@ -185,9 +185,14 @@ export function setupInteraction(
       ease: 'power2.out',
     });
 
-    // Scale up focused panel — less on landscape mobile where space is tight
+    // Scale up focused panel — less on tight viewports and for larger panels
     const isLandscape = window.innerHeight < 500;
-    const fs = panel.baseScale * (isLandscape ? 1.0 : 1.2);
+    const isFeatured = panel.baseScale > 0.9 && panels.indexOf(panel) === 0;
+    let scaleMul = 1.2;
+    if (isLandscape) scaleMul = 1.0;
+    else if (isPortrait) scaleMul = 1.0; // don't scale up in portrait (tight)
+    else if (isFeatured) scaleMul = 1.05; // featured is already bigger
+    const fs = panel.baseScale * scaleMul;
     gsap.to(panel.mesh.scale, {
       x: fs,
       y: fs,

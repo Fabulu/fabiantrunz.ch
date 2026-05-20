@@ -239,9 +239,9 @@ export async function initScene(container: HTMLElement): Promise<SceneAPI> {
     if (mode === 'portrait') {
       enterButton.mesh.position.set(0.5, -0.8, 0.5);
     } else if (mode === 'landscape-mobile') {
-      enterButton.mesh.position.set(0, 0.8, 0.5);
+      enterButton.mesh.position.set(0, 0.3, 0.5);
     } else {
-      enterButton.mesh.position.set(1.2, 2.6, 0.5);
+      enterButton.mesh.position.set(0, 2.6, 0.5); // centered above cards
     }
     enterButton.mesh.userData.baseY = enterButton.mesh.position.y;
   }

@@ -5,6 +5,7 @@ export interface BoxWalls {
   left: THREE.Group;
   right: THREE.Group;
   back: THREE.Group;
+  frontHinge: THREE.Group;
   top: THREE.Mesh;
   front: THREE.Mesh;
   floor: THREE.Mesh;
@@ -84,17 +85,29 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   scene.add(top);
   track(topGeo, topMat);
 
-  // FRONT — behind camera, fades away
-  const frontGeo = new THREE.PlaneGeometry(W * 2, H);
+  // FRONT HINGE — at Z=Z0+D, drops forward (mirrored back wall)
+  const frontHingeGeo = new THREE.PlaneGeometry(W * 2, H);
+  const frontHingeMat = wallMat(wallColor);
+  const frontHingeMesh = new THREE.Mesh(frontHingeGeo, frontHingeMat);
+  frontHingeMesh.rotation.y = Math.PI; // faces -Z (inward)
+  frontHingeMesh.position.y = H / 2;
+  const frontHinge = new THREE.Group();
+  frontHinge.position.set(0, Y0, Z0 + D);
+  frontHinge.add(frontHingeMesh);
+  scene.add(frontHinge);
+  track(frontHingeGeo, frontHingeMat);
+
+  // FRONT FADE — extra coverage behind camera, just fades
+  const frontGeo = new THREE.PlaneGeometry(W * 2 + 4, H);
   const frontMat = wallMat(wallColor);
   const front = new THREE.Mesh(frontGeo, frontMat);
-  front.position.set(0, Y0 + H / 2, Z0 + D);
+  front.position.set(0, Y0 + H / 2, Z0 + D + 0.1);
   front.rotation.y = Math.PI;
   scene.add(front);
   track(frontGeo, frontMat);
 
   // FLOOR
-  const floorGeo = new THREE.PlaneGeometry(W * 2 + 1, D + 1); // matches box with tiny overshoot
+  const floorGeo = new THREE.PlaneGeometry(W * 2, D); // exact match to box footprint
   const floorMat = wallMat(wallColor);
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.position.set(0, Y0, ZM);
@@ -103,12 +116,12 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   track(floorGeo, floorMat);
 
   function dispose() {
-    scene.remove(left, right, back, top, front, floor);
+    scene.remove(left, right, back, frontHinge, top, front, floor);
     for (const g of geos) g.dispose();
     for (const m of mats) m.dispose();
   }
 
-  return { left, right, back, top, front, floor, dispose };
+  return { left, right, back, frontHinge, top, front, floor, dispose };
 }
 
 /** Walls fall outward on bottom hinge. Stay on ground. */
@@ -123,6 +136,9 @@ export function createWallOpenTimeline(box: BoxWalls): gsap.core.Timeline {
 
   // Back falls backward (x: -PI/2)
   tl.to(box.back.rotation, { x: -Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.4);
+
+  // Front hinge falls forward (x: +PI/2, mirrored back)
+  tl.to(box.frontHinge.rotation, { x: Math.PI / 2, duration: 4.5, ease: 'power2.in' }, 0.3);
 
   // Top flies up
   tl.to(box.top.position, { y: 30, duration: 4.0, ease: 'power1.in' }, 0.3);

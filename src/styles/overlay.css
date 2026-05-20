@@ -4,7 +4,10 @@
 
 .overlay {
   position: fixed;
-  inset: 0;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: var(--z-overlay);
   pointer-events: none;
   opacity: 0;

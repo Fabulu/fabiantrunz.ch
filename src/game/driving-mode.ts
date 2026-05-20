@@ -258,9 +258,10 @@ export async function enterDrivingMode(
     // Driving lights
     drivingLights.dispose();
 
-    // Restore gallery (lighting stays in scene — never removed)
+    // Restore gallery background based on current theme
     scene.fog = null;
-    scene.background = new THREE.Color(0x050508);
+    const isDarkOnExit = document.documentElement.dataset.theme !== 'light';
+    scene.background = new THREE.Color(isDarkOnExit ? 0x050508 : 0xf5f5f8);
 
     // Cleanup
     proximity.dispose();

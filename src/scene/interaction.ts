@@ -160,8 +160,8 @@ export function setupInteraction(
     let focusX = -1.2, focusY = 1.5, focusZ = 2.0; // +1.5 for camera lift
     if (isPortrait) {
       focusX = 0;
-      focusY = 3.2; // high enough so overlay text doesn't cover card
-      focusZ = 2.5; // closer to camera = bigger on screen
+      focusY = 2.8; // above overlay text but not too high
+      focusZ = 2.2;
     } else if (isLandscapeMobile) {
       focusX = -1.2;
       focusY = 1.5; // +1.5 for camera lift

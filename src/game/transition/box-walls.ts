@@ -36,7 +36,7 @@ export function createBoxWalls(scene: THREE.Scene, wallColor: number = 0x050508)
   // Box dimensions
   const W = 4;   // half-width (X = ±4)
   const H = 8;   // height
-  const D = 14;  // depth (Z range)
+  const D = 20;  // depth (Z range) — long enough for chase cam at Z=16
   const Z0 = -1; // back Z
   const ZM = Z0 + D / 2; // center Z = 6
   const Y0 = 0.15; // bottom Y (just above terrain)

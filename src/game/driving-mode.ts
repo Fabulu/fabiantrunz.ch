@@ -109,10 +109,10 @@ export async function enterDrivingMode(
     const wallTl = createWallOpenTimeline(walls);
     master.add(wallTl, 1.0);
 
-    // Smooth lookAt: gentle tilt toward car (less dramatic downward angle)
+    // Smooth lookAt: end at exactly where chase camera looks (car.y + 1, car.z)
     master.to(lookTarget, {
-      y: 1.75,
-      z: 8,
+      y: 1.0, // matches chase camera: car.y(0) + 1
+      z: 8,   // matches car.z
       duration: 3.0,
       ease: 'power1.inOut',
     }, 0);

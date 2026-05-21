@@ -19,7 +19,7 @@ export function createPanelFloat(panels: PanelData[]): PanelFloatState {
     velocity: new THREE.Vector3(),
     angularVel: new THREE.Vector3(),
     scattered: false,
-    bobPhase: i * 1.1, // stagger like gallery mode
+    bobPhase: 0, // start at 0 so sin(0)=0 — no jerk on first frame
   }));
 }
 

@@ -52,8 +52,11 @@ export async function enterDrivingMode(
   // Panels float (don't scatter yet)
   const floatState = createPanelFloat(panels);
 
-  // Panels stay exactly where they are in gallery — no lifting, no position changes
+  // Snap panels to basePosition.y (removes gallery bob offset, prevents jerk later)
   const originalPanelY: number[] = floatState.map(item => item.panel.basePosition.y);
+  for (const item of floatState) {
+    item.panel.mesh.position.y = item.panel.basePosition.y;
+  }
 
   // Car spawns BEHIND the camera (Z=8). Camera at Z=4.5 can't see it yet.
   // rotation.y = PI/2 → rear faces +Z. heading = -PI/2 → car faces -Z.

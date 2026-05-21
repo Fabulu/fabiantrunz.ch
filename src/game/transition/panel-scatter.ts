@@ -14,7 +14,7 @@ export type PanelFloatState = FloatItem[];
 
 /** Initialize panels in floating state (bob until car hits them) */
 export function createPanelFloat(panels: PanelData[]): PanelFloatState {
-  return panels.map((panel, i) => ({
+  return panels.map((panel) => ({
     panel,
     velocity: new THREE.Vector3(),
     angularVel: new THREE.Vector3(),

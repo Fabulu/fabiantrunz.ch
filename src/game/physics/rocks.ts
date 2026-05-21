@@ -6,6 +6,7 @@ import { getHeightAt } from '../environment/terrain';
 export interface RockField {
   meshes: THREE.Mesh[];
   syncAll(): void;
+  clampToTerrain(): void;
   dispose(scene: THREE.Scene): void;
 }
 
@@ -27,6 +28,7 @@ export function createRocks(
   const rand = mulberry32(42); // deterministic seed
   const meshes: THREE.Mesh[] = [];
   const bodies: RAPIER.RigidBody[] = [];
+  const radii: number[] = [];
 
   const rockColors = [0x888888, 0x777766, 0x999988, 0x666655, 0x8b7355];
 
@@ -42,7 +44,7 @@ export function createRocks(
     );
 
     const radius = 0.3 + rand() * 0.7; // 0.3 to 1.0
-    const y = getHeightAt(x, z) + radius;
+    const y = getHeightAt(x, z) + radius + 0.1; // buffer so rocks don't sink into ground
 
     // Rock geometry — no displacement (watertight), vary detail for variety
     const detail = i % 2 === 0 ? 1 : 2;
@@ -64,11 +66,27 @@ export function createRocks(
       .setFriction(0.8);
     const { body } = physics.addDynamicBody({ x, y, z }, colliderDesc, mass);
     bodies.push(body);
+    radii.push(radius);
   }
 
   function syncAll(): void {
     for (let i = 0; i < meshes.length; i++) {
       physics.syncMeshToBody(meshes[i]!, bodies[i]!);
+    }
+  }
+
+  function clampToTerrain(): void {
+    for (let i = 0; i < bodies.length; i++) {
+      const t = bodies[i]!.translation();
+      const groundY = getHeightAt(t.x, t.z) + radii[i]!;
+      if (t.y < groundY) {
+        bodies[i]!.setTranslation({ x: t.x, y: groundY, z: t.z }, true);
+        // Kill downward velocity so rock doesn't keep falling through
+        const vel = bodies[i]!.linvel();
+        if (vel.y < 0) {
+          bodies[i]!.setLinvel({ x: vel.x, y: 0, z: vel.z }, true);
+        }
+      }
     }
   }
 
@@ -83,5 +101,5 @@ export function createRocks(
     bodies.length = 0;
   }
 
-  return { meshes, syncAll, dispose };
+  return { meshes, syncAll, clampToTerrain, dispose };
 }

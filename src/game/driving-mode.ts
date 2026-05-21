@@ -201,6 +201,7 @@ export async function enterDrivingMode(
     carCollider.syncFromPhysics(state.position, state.heading);
     preloadedAssets.physics.step();
     rocks.syncAll();
+    rocks.clampToTerrain(); // prevent rocks falling through hills
 
     // Rock-hit sound (distance-based, with debounce)
     if (rockHitCooldown > 0) {

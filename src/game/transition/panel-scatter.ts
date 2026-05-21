@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import gsap from 'gsap';
 import type { PanelData } from '../../scene/panels';
+import { getHeightAt } from '../environment/terrain';
 
 export interface FloatItem {
   panel: PanelData;
@@ -69,8 +70,10 @@ export function tickPanelFloat(
       item.panel.mesh.rotation.y += item.angularVel.y * dt;
       item.panel.mesh.rotation.z += item.angularVel.z * dt;
 
-      if (item.panel.mesh.position.y < -5) {
-        item.panel.mesh.position.y = -5;
+      // Bounce off terrain surface — offset by panel radius so bottom edge sits on ground
+      const groundY = getHeightAt(item.panel.mesh.position.x, item.panel.mesh.position.z) + 0.6;
+      if (item.panel.mesh.position.y < groundY) {
+        item.panel.mesh.position.y = groundY;
         item.velocity.y *= -0.3;
         item.velocity.x *= 0.8;
         item.velocity.z *= 0.8;

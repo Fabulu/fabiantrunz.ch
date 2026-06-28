@@ -6,12 +6,16 @@
 .fallback-wrapper {
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   display: flex;
-  align-items: center;
+  /* flex-start + margin:auto on the grid centres it when it fits, but lets it
+     scroll from the top (instead of clipping) once the cards overflow. */
+  align-items: flex-start;
   justify-content: center;
   background: var(--color-bg-primary);
-  overflow-x: auto;
-  padding: 0 var(--space-2xl);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-xl) var(--space-lg);
 }
 
 .fallback-grid {
@@ -19,8 +23,34 @@
   gap: var(--space-xl);
   align-items: center;
   justify-content: center;
-  flex-wrap: nowrap;
+  /* Single centred row while the cards fit; wraps to more rows (any count,
+     any viewport) once they don't — never a single off-screen strip. */
+  flex-wrap: wrap;
+  margin: auto;
   padding: var(--space-lg) 0;
+}
+
+/* Mobile portrait: shrink cards so two fit side-by-side and rows stay readable. */
+@media (max-width: 600px) {
+  .fallback-wrapper {
+    padding: var(--space-lg) var(--space-md);
+  }
+
+  .fallback-grid {
+    gap: var(--space-md);
+  }
+
+  .fallback-card {
+    width: 150px;
+    height: 210px;
+    padding: var(--space-md);
+  }
+
+  .fallback-card__icon,
+  .fallback-card__icon--placeholder {
+    width: 60px;
+    height: 60px;
+  }
 }
 
 .fallback-card {

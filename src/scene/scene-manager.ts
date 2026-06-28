@@ -12,28 +12,94 @@ import type { PreloadedAssets } from '../game/preload';
 import type { DrivingUI } from '../components/driving-ui';
 import { t } from '../i18n';
 
-// Responsive layout positions
-// ALL cards (including about) lifted +1.5 from originals. Camera also +1.5.
-// Gallery looks identical to original — just everything is higher in world space
-// so nothing clips through the ground in 3D mode.
-const DESKTOP_POSITIONS: [number, number, number][] = [
-  [-3.0, 1.7, 0.2], [-1.8, 1.75, 0.072], [-0.6, 1.72, 0.008],
-  [0.6, 1.77, 0.008], [1.8, 1.71, 0.072], [3.0, 1.74, 0.2],
-  [0, 0.65, 0.1], // about: -0.85 + 1.5
-];
+// Responsive layout — positions are COMPUTED from the project count, never
+// hardcoded to a fixed number of cards. The gallery is `n` project panels
+// followed by a single trailing "about" nameplate panel (always the last
+// element of the `panels` array). buildLayout() derives every coordinate from
+// `n` so adding/removing projects can never collide a card with the nameplate.
+//
+// ALL cards (including about) are lifted +1.5 from the screen-space originals;
+// the camera is lifted to match so nothing clips through the 3D ground.
 
-const PORTRAIT_POSITIONS: [number, number, number][] = [
-  [-0.8, 3.8, 0], [0.8, 3.8, 0],
-  [-0.8, 2.55, 0], [0.8, 2.55, 0],
-  [-0.8, 1.3, 0], [0.8, 1.3, 0],
-  [0, 0.5, 0], // about: high enough for bottom edge above ground in 3D
-];
+type Vec3 = [number, number, number];
 
-// Landscape mobile positions: two rows (about is last = index 6)
-const LANDSCAPE_POSITIONS: [number, number, number][] = [
-  [-1.8, 2.05, 0], [-0.6, 2.05, 0], [0.6, 2.05, 0], [1.8, 2.05, 0],
-  [-1.2, 0.95, 0], [0, 0.95, 0], [1.2, 0.95, 0], // about: -0.55 + 1.5
-];
+interface LayoutResult {
+  positions: Vec3[]; // length === n + 1 (last entry is the about nameplate)
+  fitScale: number;  // <=1 shrink factor applied when cards would crowd/overlap
+}
+
+// Geometry constants kept in sync with panels.ts (circle radius 0.6 => Ø1.2).
+const CARD_DIAMETER = 1.2;
+
+/**
+ * Build world positions for `n` project cards + 1 about nameplate, for the
+ * given layout mode. For n === 6 this reproduces the original hand-tuned
+ * tables exactly; for any other count it stays centred and overlap-free.
+ */
+function buildLayout(
+  mode: 'desktop' | 'portrait' | 'landscape-mobile',
+  n: number,
+): LayoutResult {
+  const positions: Vec3[] = [];
+
+  if (mode === 'portrait') {
+    // 2 columns, ceil(n/2) rows, about centred below the grid.
+    const cols = 2;
+    const rows = Math.max(1, Math.ceil(n / cols));
+    const bottomY = 1.3;
+    // 3 rows keep the original 1.25 gap; more rows compress to stay in view.
+    const rowGap = rows <= 3 ? 1.25 : (4.0 - bottomY) / (rows - 1);
+    const colX = [-0.8, 0.8];
+    for (let i = 0; i < n; i++) {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      const y = bottomY + (rows - 1 - r) * rowGap; // row 0 = top
+      // A lone final card on an odd count is centred instead of left-aligned.
+      const x = i === n - 1 && n % cols === 1 ? 0 : colX[c];
+      positions.push([x, y, 0]);
+    }
+    positions.push([0, bottomY - 0.8, 0]); // about: below the grid
+    const portraitCardØ = CARD_DIAMETER * 0.65; // ≈0.78 at portrait panelScale
+    return { positions, fitScale: Math.min(1, rowGap / portraitCardØ) };
+  }
+
+  if (mode === 'landscape-mobile') {
+    // about flows inline as the final grid item across (up to) two rows.
+    const items = n + 1;
+    const topCount = Math.ceil(items / 2);
+    const botCount = items - topCount;
+    const widestRow = Math.max(topCount, botCount, 1);
+    const colGap = Math.min(1.2, 6.0 / Math.max(widestRow - 1, 1));
+    for (let i = 0; i < items; i++) {
+      const top = i < topCount;
+      const j = top ? i : i - topCount;
+      const count = top ? topCount : botCount;
+      const y = top ? 2.05 : 0.95;
+      const x = (j - (count - 1) / 2) * colGap;
+      positions.push([x, y, 0]);
+    }
+    const landCardØ = CARD_DIAMETER * 0.7;
+    return { positions, fitScale: Math.min(1, colGap / landCardØ) };
+  }
+
+  // desktop — single shallow centred arc, about below.
+  const SPACING = 1.2;
+  const MAX_HALF = 3.0; // keep outer cards inside the visible frustum
+  let spacing = SPACING;
+  if (n > 1 && ((n - 1) / 2) * spacing > MAX_HALF) {
+    spacing = (2 * MAX_HALF) / (n - 1);
+  }
+  const yJitter = [0, 0.05, 0.02, 0.07, 0.01, 0.04]; // original per-card jitter
+  const baseY = 1.7;
+  for (let i = 0; i < n; i++) {
+    const x = (i - (n - 1) / 2) * spacing;
+    const z = 0.2 * Math.pow(x / 3.0, 2); // gentle bow toward the edges
+    const y = baseY + yJitter[i % yJitter.length];
+    positions.push([x, y, z]);
+  }
+  positions.push([0, 0.65, 0.1]); // about: below the arc
+  return { positions, fitScale: Math.min(1, spacing / SPACING) };
+}
 
 function getLayoutMode(w: number, h: number): 'desktop' | 'portrait' | 'landscape-mobile' {
   const aspect = w / h;
@@ -53,32 +119,37 @@ function applyLayout(
   const mode = getLayoutMode(w, h);
   const dur = animate ? 0.6 : 0;
 
-  let positions: [number, number, number][];
+  // `panels` = n project cards followed by the trailing about nameplate.
+  const projectCount = panels.length - 1;
+  const aboutIndex = panels.length - 1;
+
   let fov: number;
   let camPos: [number, number, number];
   let panelScale: number;
   let aboutScale: number;
 
   if (mode === 'portrait') {
-    positions = PORTRAIT_POSITIONS;
     fov = 70;
     camPos = [0, 2.0, 5.0]; // lifted to match portrait card positions
     panelScale = 0.65;
     aboutScale = 0.6;
   } else if (mode === 'landscape-mobile') {
-    positions = LANDSCAPE_POSITIONS;
     fov = 50;
     camPos = [0, 1.5, 3.5]; // original 0 + 1.5
     panelScale = 0.7;
     aboutScale = 0.65;
   } else {
-    positions = DESKTOP_POSITIONS;
     // Widen FOV for narrow aspects (4:3 tablets) so outer cards aren't clipped
     fov = (w / h) < 1.5 ? 60 : 50;
     camPos = [0, 1.8, 4.5];
     panelScale = 1.0;
     aboutScale = 0.85;
   }
+
+  const { positions, fitScale } = buildLayout(mode, projectCount);
+  // Shrink uniformly if the count would otherwise crowd the cards together.
+  panelScale *= fitScale;
+  aboutScale *= fitScale;
 
   camera.fov = fov;
   cameraBase.set(camPos[0], camPos[1], camPos[2]);
@@ -89,8 +160,10 @@ function applyLayout(
 
   panels.forEach((panel, i) => {
     const pos = positions[i] ?? positions[positions.length - 1];
-    const scale = i === panels.length - 1 ? aboutScale : panelScale;
-    const rotY = mode === 'desktop' && i < 6 ? Math.atan2(pos[0], 6.0) * 0.4 : 0;
+    const isAbout = i === aboutIndex;
+    const scale = isAbout ? aboutScale : panelScale;
+    // Project cards in the desktop arc get a slight inward yaw; about stays flat.
+    const rotY = mode === 'desktop' && !isAbout ? Math.atan2(pos[0], 6.0) * 0.4 : 0;
 
     panel.basePosition.set(pos[0], pos[1], pos[2]);
     panel.baseRotation.set(0, rotY, 0);

@@ -87,8 +87,9 @@ export async function createPanels(
     mesh.add(frontMesh);
     mesh.add(backMesh);
 
-    // Layout: shallow arc
-    const x = -3.0 + i * 1.2;
+    // Layout: shallow arc (centred on the project count; the responsive
+    // applyLayout() in scene-manager overrides these before the first frame).
+    const x = (i - (projects.length - 1) / 2) * 1.2;
     const z = 0.2 * Math.pow(x / 3.0, 2);
     const y = Y_OFFSETS[i] ?? 0;
     const rotationY = Math.atan2(x, 6.0) * 0.4;

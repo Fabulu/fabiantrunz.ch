@@ -69,6 +69,16 @@ export const translations: Record<string, { de: string; en: string }> = {
     en: "Three completed critical editions of ancient Chinese Zen texts: Hsin Hsin Ming, Wumenguan (reading edition), and Song of Enlightenment. Each edition is built from 100+ historical woodblock sources, with full provenance tracking of every OCR and editorial step. The project is actively growing.",
   },
 
+  // Busin 0
+  "project.busin0.tagline": {
+    de: "Englische Fan-Übersetzung eines japan-exklusiven PS2-Dungeon-Crawlers",
+    en: "English fan translation of a Japan-only PS2 dungeon crawler",
+  },
+  "project.busin0.description": {
+    de: "Englische Fan-Übersetzung von Busin 0: Wizardry Alternative Neo, einem nur in Japan erschienenen PS2-Dungeon-Crawler aus der Ego-Perspektive (40+ Stunden). Läuft auf echter PS2-Hardware, da der Patch die Disc-Daten selbst verändert und nicht auf Emulator-Overlays setzt. Verteilt als xdelta-Patch, den man auf seine eigene legale japanische ISO anwendet. Über 83'000 übersetzte Zeilen, gestützt auf rund 13'000 Zeilen selbst entwickelter Reverse-Engineering-Werkzeuge. Aktuell als öffentliche Beta verfügbar.",
+    en: "English fan translation of Busin 0: Wizardry Alternative Neo, a Japan-only PS2 first-person dungeon crawler (40+ hours). It runs on real PS2 hardware because the patch modifies the actual disc data rather than relying on emulator overlays. Distributed as an xdelta patch you apply to your own legal Japanese ISO. Over 83,000 translated lines, backed by roughly 13,000 lines of custom reverse-engineering tooling. Currently available as a public beta.",
+  },
+
   // Project links
   "project.links.website": {
     de: "Website",

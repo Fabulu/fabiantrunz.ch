@@ -89,4 +89,16 @@ export const projects: Project[] = [
       { type: 'github', url: 'https://github.com/Fabulu/woodblockeditionprocess', labelKey: 'project.links.github' },
     ],
   },
+  {
+    id: 'busin0',
+    featured: false,
+    titleKey: 'Busin 0: Wizardry Alternative Neo',
+    taglineKey: 'project.busin0.tagline',
+    descriptionKey: 'project.busin0.description',
+    tags: ['PS2', 'ROM Hacking', 'Reverse Engineering', 'xdelta', 'Translation'],
+    icon: '/icons/busin0.png',
+    links: [
+      { type: 'website', url: 'https://busin0-en.pages.dev', labelKey: 'project.links.website' },
+    ],
+  },
 ];
